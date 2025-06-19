@@ -3,6 +3,8 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\CarController;
 
+Route::get('cars/available', [CarController::class, 'available']);
+
 //Route::middleware(['jwt.auth', 'role:admin'])->group(function () {
     Route::patch('cars/{car}/status', [CarController::class, 'changeStatus']);
     Route::patch('cars/{car}/license_plate', [CarController::class, 'changeLicensePlate']);
@@ -18,7 +20,6 @@ use App\Http\Controllers\CarController;
 //});
 
 //Route::middleware(['jwt.auth', 'role:user'])->group(function () {
-    Route::get('cars/available', [CarController::class, 'available']);
     Route::put('cars/{car}', [CarController::class, 'update']);
 //});
 

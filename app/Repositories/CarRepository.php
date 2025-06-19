@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Repositories;
 
 use App\Models\Car;
@@ -10,16 +11,16 @@ class CarRepository
         return Car::create($data);
     }
 
+    public function find(int $id): ?Car
+    {
+        return Car::with('renter')->find($id);
+    }
+
     public function update(Car $car, array $data): Car
     {
         $car->update($data);
 
         return $car;
-    }
-
-    public function find(int $id): ?Car
-    {
-        return Car::with('renter')->find($id);
     }
 
     public function delete(Car $car): void

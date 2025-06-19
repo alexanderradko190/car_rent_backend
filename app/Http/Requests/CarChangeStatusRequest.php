@@ -3,10 +3,10 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 use App\Enums\CarStatus;
+use Illuminate\Validation\Rule;
 
-class CarUpdateRequest extends FormRequest
+class CarChangeStatusRequest extends FormRequest
 {
     public function authorize(): bool
     {
@@ -17,19 +17,18 @@ class CarUpdateRequest extends FormRequest
     {
         return [
             'status' => [
-                'sometimes',
+                'required',
                 'string',
                 Rule::in(array_column(CarStatus::cases(), 'value')),
             ],
-            'current_renter_id' => ['nullable', 'integer', 'exists:users,id'],
         ];
     }
 
     public function messages(): array
     {
         return [
+            'status.required' => 'Укажите статус автомобиля',
             'status.in' => 'Недопустимый статус автомобиля',
-            'current_renter_id.exists' => 'Арендатор не найден в системе',
         ];
     }
 }
