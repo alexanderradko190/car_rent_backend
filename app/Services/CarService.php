@@ -111,6 +111,7 @@ class CarService
 
     public function changeRenter(Car $car, ?int $renterId): array
     {
+
 //        if ($car->current_renter_id === $renterId) {
 //            return ['error' => 'Этот пользователь уже привязан к автомобилю', 'code' => 400];
 //        }

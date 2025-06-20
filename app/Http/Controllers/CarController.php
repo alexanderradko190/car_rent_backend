@@ -16,7 +16,9 @@ use Illuminate\Http\Request;
 
 class CarController extends Controller
 {
-    public function __construct(private CarService $service){}
+    public function __construct(private CarService $service)
+    {
+    }
 
     public function index(): JsonResponse
     {
@@ -99,11 +101,65 @@ class CarController extends Controller
 
     public function changeRenter(Request $request, Car $car): JsonResponse
     {
+        // $clientId = auth()->id();
+        $clientId = 2; // TODO: вернуть auth()->id()
+
         return response()->json($this->service->changeRenter($car, $request->input('current_renter_id')));
     }
 
     public function changeCarClassAndRate(Request $request, Car $car): JsonResponse
     {
         return response()->json($this->service->changeCarClassAndRate($car, $request->input('car_class')));
+    }
+
+    public function export()
+    {
+        $cars = $this->service->getAll();
+        $header = [
+            'ID',
+            'Марка',
+            'Модель',
+            'Год',
+            'VIN',
+            'Гос. номер',
+            'Статус',
+            'Мощность',
+            'Класс',
+            'Тариф (руб/час)',
+            'Дата создания',
+            'Дата изменения',
+        ];
+
+        $handle = fopen('php://temp', 'r+');
+        fwrite($handle, "\xEF\xBB\xBF");
+
+        // Записываем заголовки
+        fputcsv($handle, $header, ';');
+
+        foreach ($cars as $car) {
+            $row = [
+                $car->id,
+                $car->make,
+                $car->model,
+                $car->year,
+                $car->vin,
+                $car->license_plate,
+                $car->status instanceof \App\Enums\CarStatus ? $car->status->label() : $car->status,
+                $car->power,
+                $car->car_class?->label() ?? $car->car_class,
+                $car->hourly_rate,
+                $car->created_at,
+                $car->updated_at,
+            ];
+            fputcsv($handle, $row, ';');
+        }
+
+        rewind($handle);
+        $csv = stream_get_contents($handle);
+        fclose($handle);
+
+        return response($csv)
+            ->header('Content-Type', 'text/csv; charset=UTF-8')
+            ->header('Content-Disposition', 'attachment; filename="cars.csv"');
     }
 }
