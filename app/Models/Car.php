@@ -33,6 +33,6 @@ class Car extends Model
 
     public function renter()
     {
-        return $this->belongsTo(User::class, 'current_renter_id');
+        return $this->belongsTo(Client::class, 'client_id');
     }
 }

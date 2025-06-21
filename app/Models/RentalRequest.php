@@ -12,7 +12,7 @@ class RentalRequest extends Model
     use HasFactory;
 
     protected $fillable = [
-        'user_id',
+        'client_id',
         'car_id',
         'start_time',
         'end_time',
@@ -32,5 +32,15 @@ class RentalRequest extends Model
     public static function factory(...$parameters)
     {
         return RentalRequestFactory::new();
+    }
+
+    public function client()
+    {
+        return $this->belongsTo(Client::class, 'client_id');
+    }
+
+    public function car()
+    {
+        return $this->belongsTo(Car::class, 'car_id');
     }
 }

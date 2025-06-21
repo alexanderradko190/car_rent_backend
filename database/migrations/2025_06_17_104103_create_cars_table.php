@@ -19,7 +19,9 @@ return new class extends Migration
             $table->smallInteger('power')->nullable();
             $table->float('hourly_rate', 8, 2);
             $table->string('status', 20)->default('available');
-            $table->foreignId('current_renter_id')->nullable()->constrained('users');
+
+            $table->foreignId('current_renter_id')->nullable()->constrained('clients');
+
             $table->timestamps();
             $table->softDeletes();
         });
