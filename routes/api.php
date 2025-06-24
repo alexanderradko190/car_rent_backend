@@ -1,12 +1,11 @@
 <?php
 
 use App\Http\Controllers\ClientController;
+use App\Http\Controllers\ExportController;
 use App\Http\Controllers\RentalRequestController;
 use App\Http\Controllers\RentHistoryController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\CarController;
-
-Route::get('cars/export', [CarController::class, 'export']);
 
 Route::get('cars/available', [CarController::class, 'available']);
 
@@ -37,10 +36,6 @@ Route::apiResource('clients', ClientController::class);
 
 Route::post('clients/{client}/license_scan', [ClientController::class, 'updateLicenseScan']);
 
-Route::get('rent_histories/export', [RentHistoryController::class, 'export']);
-
-//Route::get('rent_histories/export', [RentHistoryController::class, 'export']);
-//Route::post('rent_histories/import', [RentHistoryController::class, 'import']);
 Route::apiResource('rent_histories', RentHistoryController::class)->except(['store', 'update']);
 
 Route::apiResource('rental_requests', RentalRequestController::class)->except(['update']);
@@ -48,6 +43,8 @@ Route::apiResource('rental_requests', RentalRequestController::class)->except(['
 Route::post('rental_requests/{id}/approve', [RentalRequestController::class, 'approve']);
 Route::post('rental_requests/{id}/reject', [RentalRequestController::class, 'reject']);
 Route::post('rental_requests/{id}/complete', [RentalRequestController::class, 'complete']);
+
+Route::get('export/{type}', [ExportController::class, 'export']);
 
 
 
