@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Services\RentHistoryService;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Http;
 
 class RentHistoryController extends Controller
 {
@@ -15,7 +16,7 @@ class RentHistoryController extends Controller
     public function index(Request $request)
     {
         $validated = $request->validate([
-            'sort_by'    => [
+            'sort_by' => [
                 'nullable',
                 Rule::in([
                     'id', 'car_id', 'client_id', 'start_time', 'end_time', 'total_cost',
@@ -23,15 +24,15 @@ class RentHistoryController extends Controller
                 ])
             ],
             'sort_order' => ['nullable', Rule::in(['asc', 'desc'])],
-            'client_id'  => 'nullable|integer',
-            'car_id'     => 'nullable|integer',
-            'year'       => 'nullable|integer',
-            'make'       => 'nullable|string',
-            'model'      => 'nullable|string',
+            'client_id' => 'nullable|integer',
+            'car_id' => 'nullable|integer',
+            'year' => 'nullable|integer',
+            'make' => 'nullable|string',
+            'model' => 'nullable|string',
         ]);
 
-        $filters   = $request->only(['client_id', 'car_id', 'year', 'make', 'model']);
-        $sortBy    = $validated['sort_by'] ?? null;
+        $filters = $request->only(['client_id', 'car_id', 'year', 'make', 'model']);
+        $sortBy = $validated['sort_by'] ?? null;
         $sortOrder = $validated['sort_order'] ?? 'asc';
 
         $data = $this->service->filterAndSort($filters, $sortBy, $sortOrder);
@@ -58,66 +59,44 @@ class RentHistoryController extends Controller
         return response()->json(['message' => 'История удалена']);
     }
 
-    public function import(Request $request)
+    public function export(Request $request)
     {
-        $request->validate(['file' => 'required|file|mimes:csv,txt']);
-        $path = $request->file('file')->getRealPath();
-        $handle = fopen($path, 'r');
-        $header = fgetcsv($handle, 1000, ",");
-        while (($row = fgetcsv($handle, 1000, ",")) !== false) {
-            $data = array_combine($header, $row);
-            $this->service->create($data);
-        }
-        fclose($handle);
-        return response()->json(['message' => 'Импорт завершён']);
-    }
-
-    public function export()
-    {
-        $histories = $this->service->all();
-        $header = [
-            'ID',
-            'ID клиента',
-            'ФИО клиента',
-            'ID автомобиля',
-            'Марка',
-            'Модель',
-            'Год выпуска',
-            'VIN',
-            'Гос. номер',
-            'Начало аренды',
-            'Окончание аренды',
-            'Стоимость аренды'
+        $userId = auth()->id();
+        $params = [
+            'user_id' => $userId,
         ];
 
-        $callback = function () use ($histories, $header) {
-            $handle = fopen('php://output', 'w');
-            fwrite($handle, "\xEF\xBB\xBF");
-            fputcsv($handle, $header, ';');
+        $response = Http::post(env('GO_EXPORT_URL') . '/api/export', $params);
 
-            foreach ($histories as $h) {
-                fputcsv($handle, [
-                    $h->id,
-                    $h->client_id,
-                    $h->client?->full_name ?? '',
-                    $h->car_id,
-                    $h->car?->make ?? '',
-                    $h->car?->model ?? '',
-                    $h->car?->year ?? '',
-                    $h->car?->vin ?? '',
-                    $h->car?->license_plate ?? '',
-                    $h->start_time,
-                    $h->end_time,
-                    $h->total_cost,
-                ], ';');
-            }
-            fclose($handle);
-        };
+        if ($response->failed()) {
+            return response()->json(['error' => 'Ошибка при создании экспорта'], 500);
+        }
 
-        return response()->stream($callback, 200, [
-            'Content-Type' => 'text/csv; charset=UTF-8',
-            'Content-Disposition' => 'attachment; filename="rent_histories.csv"',
-            'Cache-Control' => 'no-store, no-cache',
+        $data = $response->json();
+        return response()->json([
+            'task_id' => $data['task_id'],
+            'status' => $data['status'],
         ]);
+    }
+
+    public function exportStatus(Request $request, $taskId)
+    {
+        $response = Http::get(env('GO_EXPORT_URL') . "/api/export/$taskId/status");
+
+        if ($response->failed()) {
+            return response()->json(['error' => 'Ошибка получения статуса'], 500);
+        }
+        return response()->json($response->json());
+    }
+
+    public function exportDownload(Request $request, $taskId)
+    {
+        $response = Http::get(env('GO_EXPORT_URL') . "/api/export/$taskId/download");
+
+        if ($response->failed()) {
+            return response()->json(['error' => 'Файл не найден'], 404);
+        }
+        $data = $response->json();
+        return response()->json($data);
     }
 }

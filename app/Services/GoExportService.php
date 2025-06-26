@@ -10,7 +10,7 @@ class GoExportService
 
     public function __construct()
     {
-        $this->client = new Client(['base_uri' => 'http://localhost:8002']);
+        $this->client = new Client(['base_uri' => 'http://go-export:8002']);
     }
 
     public function export(string $type): array
