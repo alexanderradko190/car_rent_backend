@@ -1,7 +1,9 @@
 FROM php:8.2-fpm-alpine
 
 RUN apk add --no-cache --update \
-    bash git curl zip unzip libzip-dev libpng-dev libjpeg-turbo-dev freetype-dev oniguruma-dev icu-dev libxml2-dev
+    bash git curl zip unzip libzip-dev libpng-dev freetype-dev libjpeg-turbo-dev oniguruma-dev icu-dev libxml2-dev pkgconfig
+
+ENV PKG_CONFIG_PATH=/usr/lib/pkgconfig:/usr/local/lib/pkgconfig
 
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install gd

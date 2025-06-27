@@ -1,19 +1,12 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="utf-8">
-    <title>Договор аренды автомобиля</title>
-    <style>body { font-family: DejaVu Sans, sans-serif; font-size: 14px; }</style>
+    <title>Договор аренды</title>
 </head>
 <body>
-<h2>Договор аренды автомобиля</h2>
-
+<h1>Договор аренды автомобиля</h1>
 <p>Клиент: {{ $client->full_name }}</p>
-<p>Автомобиль: {{ $car->make }} {{ $car->model }} (VIN: {{ $car->vin }})</p>
-<p>Срок аренды: {{ $request->start_time }} — {{ $request->end_time }}</p>
-<p>Стоимость аренды: {{ $request->total_cost }} руб.</p>
-<p>Опция страхования: {{ $request->insurance_option ? 'Да' : 'Нет' }}</p>
-<br>
-<p>ООО "Арендодатель" и Клиент заключили договор аренды автомобиля на вышеуказанных условиях.</p>
+<p>Авто: {{ $car->make }} {{ $car->model }} ({{ $car->license_plate }})</p>
+<p>Срок аренды: с {{ $request->start_time }} по {{ $request->end_time }}</p>
 </body>
 </html>
