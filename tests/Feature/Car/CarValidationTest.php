@@ -3,6 +3,7 @@
 namespace Tests\Feature\Car;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 use App\Models\Car;
 
@@ -10,7 +11,7 @@ class CarValidationTest extends TestCase
 {
     use RefreshDatabase;
 
-    #[\PHPUnit\Framework\Attributes\DataProvider('invalidCarDataProvider')]
+    #[DataProvider('invalidCarDataProvider')]
     public function test_invalid_car_data($payload, $expectedErrors)
     {
         if (isset($payload['vin']) && $payload['vin'] === 'JTHBK1GG7G2212345') {
