@@ -1,0 +1,54 @@
+stages:
+  - test
+  - deploy
+
+variables:
+  DB_CONNECTION: mysql
+  DB_HOST: 127.0.0.1
+  DB_PORT: 3306
+  DB_DATABASE: laravel_test
+  DB_USERNAME: root
+  DB_PASSWORD: root
+  APP_ENV: testing
+  APP_KEY: base64:Y7AB3ZQXndL25RZgIrf1pS+Ktw2pS7Qz5f4JcJPVw1o=
+  CACHE_DRIVER: file
+  SESSION_DRIVER: file
+  QUEUE_CONNECTION: sync
+  FILESYSTEM_DISK: local
+
+cache:
+  key: ${CI_COMMIT_REF_SLUG}
+  paths:
+    - vendor/
+
+before_script:
+  - cp .env.ci .env
+  - composer install --no-interaction --prefer-dist --optimize-autoloader
+  - php artisan key:generate
+  - php artisan migrate:fresh --seed --env=testing
+
+test:
+  stage: test
+  services:
+    - mysql:8.0
+  script:
+    - php artisan test --env=testing
+  artifacts:
+    when: always
+    reports:
+      junit: storage/test-results/junit.xml
+    paths:
+      - storage/test-results/
+      - storage/logs/
+  only:
+    - merge_requests
+    - main
+    - master
+
+# deploy:
+#   stage: deploy
+#   script:
+#     - echo "Deploy step (напиши тут реальный деплой)"
+#   only:
+#     - main
+#     - master
