@@ -1,11 +1,12 @@
 <?php
 
-use App\Http\Controllers\ClientController;
-use App\Http\Controllers\ExportController;
-use App\Http\Controllers\RentalRequestController;
-use App\Http\Controllers\RentHistoryController;
+use App\Http\Controllers\Car\CarController;
+use App\Http\Controllers\Client\ClientController;
+use App\Http\Controllers\Export\ExportController;
+use App\Http\Controllers\RentalRequest\RentalRequestController;
+use App\Http\Controllers\RentHistory\RentHistoryController;
+use App\Http\Middleware\CheckRole;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\CarController;
 
 Route::get('cars/available', [CarController::class, 'available']);
 
@@ -17,11 +18,11 @@ Route::get('cars/available', [CarController::class, 'available']);
     Route::delete('cars/{car}', [CarController::class, 'destroy']);
 //});
 
-//Route::middleware(['jwt.auth', 'role:manager'])->group(function () {
+Route::middleware(['jwt.auth', CheckRole::class . ':admin'])->group(function () {
     Route::post('cars', [CarController::class, 'store']);
     Route::get('cars', [CarController::class, 'index']);
     Route::get('cars/{car}', [CarController::class, 'show']);
-//});
+});
 
 Route::post('cars/{car}/photo', [CarController::class, 'uploadPhoto']);
 Route::get('cars/{car}/photos', [CarController::class, 'getPhotos']);

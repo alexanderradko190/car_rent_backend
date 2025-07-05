@@ -1,7 +1,8 @@
 FROM php:8.2-fpm-alpine
 
 RUN apk add --no-cache --update \
-    bash git curl zip unzip libzip-dev libpng-dev freetype-dev libjpeg-turbo-dev oniguruma-dev icu-dev libxml2-dev pkgconfig
+    bash git curl zip unzip libzip-dev libpng-dev freetype-dev libjpeg-turbo-dev oniguruma-dev  \
+    icu-dev libxml2-dev pkgconfig
 
 ENV PKG_CONFIG_PATH=/usr/lib/pkgconfig:/usr/local/lib/pkgconfig
 
@@ -13,8 +14,6 @@ RUN docker-php-ext-install pdo pdo_mysql zip intl
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www/html
-
-COPY composer.json composer.lock ./
 
 COPY . .
 

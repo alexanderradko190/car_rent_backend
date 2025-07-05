@@ -2,9 +2,9 @@
 
 namespace App\Notifications;
 
+use App\Models\RentalRequest\RentalRequest;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
-use App\Models\RentalRequest;
 use Illuminate\Notifications\Messages\MailMessage;
 
 class RentalApprovedNotification extends Notification

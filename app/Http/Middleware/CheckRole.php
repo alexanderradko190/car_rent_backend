@@ -11,8 +11,8 @@ class CheckRole
     {
         $user = auth()->user();
 
-        if (!$user || !in_array($user->role, $roles)) {
-            return response()->json(['error' => 'Access denied'], 403);
+        if (!$user || !in_array($user->role->value, $roles)) {
+            return response()->json(['error' => 'Доступ запрещен'], 403);
         }
 
         return $next($request);

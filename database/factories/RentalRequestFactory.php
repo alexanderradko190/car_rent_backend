@@ -2,10 +2,10 @@
 
 namespace Database\Factories;
 
-use App\Enums\RentalStatus;
-use App\Models\RentalRequest;
-use App\Models\User;
-use App\Models\Car;
+use App\Enums\Car\RentalStatus;
+use App\Models\Car\Car;
+use App\Models\RentalRequest\RentalRequest;
+use App\Models\User\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 class RentalRequestFactory extends Factory

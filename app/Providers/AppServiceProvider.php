@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Models\User\User;
+use App\Observers\RoleObserver;
 use App\Services\RentalCostCalculator;
 use Illuminate\Support\ServiceProvider;
 
@@ -20,6 +22,6 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        User::observe(RoleObserver::class);
     }
 }
