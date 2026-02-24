@@ -3,6 +3,7 @@
 namespace App\Repositories\Client;
 
 use App\Models\Client\Client;
+use Illuminate\Database\Eloquent\Collection;
 
 class ClientRepository
 {
@@ -19,7 +20,7 @@ class ClientRepository
     {
         return Client::find($id);
     }
-    public function all()
+    public function all(): Collection
     {
         return Client::all();
     }

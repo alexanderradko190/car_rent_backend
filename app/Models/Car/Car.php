@@ -7,6 +7,7 @@ use App\Enums\Car\CarClass;
 use App\Models\Client\Client;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Car extends Model
@@ -28,12 +29,12 @@ class Car extends Model
 
     protected $casts = [
         'car_class' => CarClass::class,
-        'status' => CarStatus::class,
-        'hourly_rate' => 'float'
+        'status' => CarStatus::class
     ];
 
-    public function renter()
+    public function renter(): BelongsTo
     {
-        return $this->belongsTo(Client::class, 'client_id');
+        return $this->belongsTo(Client::class, 'current_renter_id');
     }
+
 }

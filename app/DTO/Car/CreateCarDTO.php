@@ -11,6 +11,8 @@ class CreateCarDTO
         public string $license_plate,
         public int $power,
         public string $car_class,
-        public float $hourly_rate
-    ) {}
+        public int $hourly_rate
+    ) {
+        //
+    }
 }

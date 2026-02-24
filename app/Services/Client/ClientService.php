@@ -5,12 +5,16 @@ namespace App\Services\Client;
 use App\Models\Client\Client;
 use App\Repositories\Client\ClientRepository;
 use App\DTO\Client\CreateClientDTO;
+use Illuminate\Database\Eloquent\Collection;
 
 class ClientService
 {
-    public function __construct(private ClientRepository $repository) {}
+    public function __construct(private ClientRepository $repository)
+    {
+        //
+    }
 
-    public function create(CreateClientDTO $dto)
+    public function create(CreateClientDTO $dto): Client
     {
         return $this->repository->create([
             'full_name' => $dto->full_name,
@@ -18,26 +22,26 @@ class ClientService
             'phone' => $dto->phone,
             'email' => $dto->email,
             'driving_experience' => $dto->driving_experience,
-            'license_scan' => $dto->license_scan,
+            'license_scan' => $dto->license_scan
         ]);
     }
 
-    public function update(Client $client, array $data)
+    public function update(Client $client, array $data): Client
     {
         return $this->repository->update($client, $data);
     }
 
-    public function find(int $id)
+    public function find(int $id): ?Client
     {
         return $this->repository->find($id);
     }
 
-    public function all()
+    public function all(): Collection
     {
         return $this->repository->all();
     }
 
-    public function delete(Client $client)
+    public function delete(Client $client): void
     {
         $this->repository->delete($client);
     }

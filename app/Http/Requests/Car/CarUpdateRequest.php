@@ -2,17 +2,13 @@
 
 namespace App\Http\Requests\Car;
 
+use App\Http\Requests\ApiRequest;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use App\Enums\Car\CarStatus;
 
-class CarUpdateRequest extends FormRequest
+class CarUpdateRequest extends ApiRequest
 {
-    public function authorize(): bool
-    {
-        return true;
-    }
-
     public function rules(): array
     {
         return [
@@ -21,7 +17,7 @@ class CarUpdateRequest extends FormRequest
                 'string',
                 Rule::in(array_column(CarStatus::cases(), 'value')),
             ],
-            'current_renter_id' => ['nullable', 'integer', 'exists:users,id'],
+            'current_renter_id' => ['nullable', 'integer', 'exists:clients,id'],
         ];
     }
 

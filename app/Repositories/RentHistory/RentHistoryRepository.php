@@ -3,6 +3,7 @@
 namespace App\Repositories\RentHistory;
 
 use App\Models\RentHistory\RentHistory;
+use Illuminate\Database\Eloquent\Collection;
 
 class RentHistoryRepository
 {
@@ -11,7 +12,7 @@ class RentHistoryRepository
         return RentHistory::create($data);
     }
 
-    public function all()
+    public function all(): Collection
     {
         return RentHistory::with(['car', 'client'])->get();
     }
@@ -26,7 +27,7 @@ class RentHistoryRepository
         $history->delete();
     }
 
-    public function filterAndSort(array $filters, ?string $sortBy, string $sortOrder)
+    public function filterAndSort(array $filters, ?string $sortBy, string $sortOrder): Collection
     {
         $query = RentHistory::with(['car', 'client']);
 
@@ -53,7 +54,12 @@ class RentHistoryRepository
         }
 
         $allowedSortFields = [
-            'id', 'car_id', 'client_id', 'start_time', 'end_time', 'total_cost',
+            'id',
+            'car_id',
+            'client_id',
+            'start_time',
+            'end_time',
+            'total_cost',
         ];
 
         if ($sortBy && in_array($sortBy, $allowedSortFields)) {

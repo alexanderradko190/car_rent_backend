@@ -9,24 +9,38 @@ use App\Http\Requests\Client\ClientUpdateRequest;
 use App\Models\Client\Client;
 use App\Services\Client\ClientService;
 use App\DTO\Client\CreateClientDTO;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Storage;
 
 class ClientController extends Controller
 {
     public function __construct(private ClientService $service)
     {
+        //
     }
 
-    public function index()
+    public function index(): JsonResponse
     {
         return response()->json([
             'data' => $this->service->all(),
         ]);
     }
 
-    public function store(ClientCreateRequest $request)
+    public function store(ClientCreateRequest $request): JsonResponse
     {
-        $dto = new CreateClientDTO(...$request->validated());
+        $data = $request->validated();
+
+        $data['user_id'] = auth()->id();
+
+        $dto = new CreateClientDTO(
+            $data['user_id'],
+            $data['full_name'],
+            $data['age'],
+            $data['phone'],
+            $data['email'],
+            $data['driving_experience'] ?? null,
+            $data['license_scan'] ?? null
+        );
 
         if ($request->hasFile('license_scan')) {
             $dto->license_scan = $request->file('license_scan')->store('licenses', 'public');
@@ -40,12 +54,15 @@ class ClientController extends Controller
         ], 201);
     }
 
-    public function show($id)
+
+    public function show($id): JsonResponse
     {
         $client = $this->service->find($id);
 
         if (!$client) {
-            return response()->json(['message' => 'Клиент не найден'], 404);
+            return response()->json([
+                'message' => 'Клиент не найден'
+            ], 404);
         }
 
         $data = $client->toArray();
@@ -56,28 +73,38 @@ class ClientController extends Controller
             $data['license_scan'] = null;
         }
 
-        return response()->json(['data' => $data]);
+        return response()->json([
+            'data' => $data
+        ]);
     }
 
-    public function update(ClientUpdateRequest $request, $id)
+    public function update(ClientUpdateRequest $request, $id): JsonResponse
     {
         $client = $this->service->find($id);
 
         if (!$client) {
-            return response()->json(['message' => 'Клиент не найден'], 404);
+            return response()->json([
+                'message' => 'Клиент не найден'
+            ], 404);
         }
 
-        $client = $this->service->update($client, $request->only(['phone', 'email', 'driving_experience']));
+        $data = $request->validated();
 
-        return response()->json(['data' => $client]);
+        $this->service->update($client, $data);
+
+        return response()->json([
+            'message' => 'Данные клиента обновлены'
+        ]);
     }
 
-    public function updateLicenseScan(ClientLicenseScanRequest $request, $id)
+    public function updateLicenseScan(ClientLicenseScanRequest $request, $id): JsonResponse
     {
         $client = $this->service->find($id);
 
         if (!$client) {
-            return response()->json(['message' => 'Клиент не найден'], 404);
+            return response()->json([
+                'message' => 'Клиент не найден'
+            ], 404);
         }
 
         if ($client->license_scan) {
@@ -87,25 +114,35 @@ class ClientController extends Controller
         $file = $request->file('license_scan');
         $path = $file->store('licenses', 'public');
         $client->license_scan = $path;
+
         $client->save();
 
         return response()->json([
-            'message' => 'Водительское удостоверение обновлено',
-            'license_scan' => Storage::disk('public')->url($path),
+            'message' => 'Водительское удостоверение обновлено'
         ]);
     }
 
-    public function destroy($id)
+    public function destroy($id): JsonResponse
     {
         $client = $this->service->find($id);
 
         if (!$client) {
-            return response()->json(['message' => 'Клиент не найден'], 404);
+            return response()->json([
+                'message' => 'Клиент не найден'
+            ], 404);
+        }
+
+        if ($client->car) {
+            return response()->json([
+                'message' => 'Нельхя удалить клиента, который привязан к автомобилю'
+            ], 400);
         }
 
         $this->service->delete($client);
 
-        return response()->json(['message' => 'Клиент удалён']);
+        return response()->json([
+            'message' => 'Клиент удалён'
+        ]);
     }
 
     public function export()

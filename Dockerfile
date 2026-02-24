@@ -1,8 +1,9 @@
 FROM php:8.2-fpm-alpine
 
-RUN apk add --no-cache --update \
-    bash git curl zip unzip libzip-dev libpng-dev freetype-dev libjpeg-turbo-dev oniguruma-dev  \
-    icu-dev libxml2-dev pkgconfig
+RUN apk add --no-cache \
+    bash git curl zip unzip \
+    libzip-dev libpng-dev freetype-dev libjpeg-turbo-dev oniguruma-dev \
+    icu-dev libxml2-dev pkgconf
 
 ENV PKG_CONFIG_PATH=/usr/lib/pkgconfig:/usr/local/lib/pkgconfig
 

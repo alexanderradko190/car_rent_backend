@@ -2,15 +2,11 @@
 
 namespace App\Http\Requests\Car;
 
+use App\Http\Requests\ApiRequest;
 use Illuminate\Foundation\Http\FormRequest;
 
-class CarChangeRenterRequest extends FormRequest
+class CarChangeRenterRequest extends ApiRequest
 {
-    public function authorize(): bool
-    {
-        return true;
-    }
-
     public function rules(): array
     {
         return [

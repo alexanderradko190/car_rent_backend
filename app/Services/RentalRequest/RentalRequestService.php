@@ -6,7 +6,7 @@ use App\DTO\RentalRequest\CreateRentalRequestDTO;
 use App\Enums\Car\CarStatus;
 use App\Enums\Car\RentalStatus;
 use App\Models\RentalRequest\RentalRequest;
-use App\Repositories\Car\CarRepository;
+use App\Repositories\Car\CarRepositoryInterface;
 use App\Repositories\Client\ClientRepository;
 use App\Repositories\RentalRequest\RentalRequestRepository;
 use App\Services\RentalCostCalculator;
@@ -20,7 +20,7 @@ class RentalRequestService
 {
     public function __construct(
         private RentalRequestRepository $repository,
-        private CarRepository           $carRepo,
+        private CarRepositoryInterface   $carRepo,
         private ClientRepository        $clientRepo,
         private RentalCostCalculator    $costCalculator
     )
@@ -58,7 +58,7 @@ class RentalRequestService
             'end_time' => $dto->end_time,
             'total_cost' => $total,
             'insurance_option' => $dto->insurance_option,
-            'status' => RentalStatus::PENDING->value,
+            'status' => RentalStatus::PENDING->value
         ];
 
         $request = $this->repository->create($data);
@@ -67,9 +67,12 @@ class RentalRequestService
 
         $agreementPath = $this->generateAgreement($request);
         $request->agreement_path = $agreementPath;
+
         $request->save();
 
-        return ['data' => $request];
+        return [
+            'data' => $request
+        ];
     }
 
     public function approve($id): array
@@ -149,11 +152,15 @@ class RentalRequestService
         $request = $this->repository->find($id);
 
         if (!$request) {
-            return ['error' => 'Заявка не найдена'];
+            return [
+                'error' => 'Заявка не найдена'
+            ];
         }
         $this->repository->delete($request);
 
-        return ['message' => 'Заявка удалена'];
+        return [
+            'message' => 'Заявка удалена'
+        ];
     }
 
     private function generateAgreement(RentalRequest $request): string

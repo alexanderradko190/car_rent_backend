@@ -6,6 +6,7 @@ use App\Models\Car\Car;
 use App\Models\Client\Client;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class RentHistory extends Model
 {
@@ -16,14 +17,14 @@ class RentHistory extends Model
         'client_id',
         'start_time',
         'end_time',
-        'total_cost',
+        'total_cost'
     ];
 
-    public function car()
+    public function car(): BelongsTo
     {
         return $this->belongsTo(Car::class);
     }
-    public function client()
+    public function client(): BelongsTo
     {
         return $this->belongsTo(Client::class);
     }

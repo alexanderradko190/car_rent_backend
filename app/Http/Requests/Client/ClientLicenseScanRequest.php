@@ -2,15 +2,11 @@
 
 namespace App\Http\Requests\Client;
 
+use App\Http\Requests\ApiRequest;
 use Illuminate\Foundation\Http\FormRequest;
 
-class ClientLicenseScanRequest extends FormRequest
+class ClientLicenseScanRequest extends ApiRequest
 {
-    public function authorize(): bool
-    {
-        return true;
-    }
-
     public function rules(): array
     {
         return [

@@ -16,12 +16,4 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->app->singleton(RentalCostCalculator::class);
     }
-
-    /**
-     * Bootstrap any application services.
-     */
-    public function boot(): void
-    {
-        User::observe(RoleObserver::class);
-    }
 }

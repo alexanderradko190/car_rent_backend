@@ -17,7 +17,7 @@ return new class extends Migration
             $table->string('license_plate', 15)->unique();
             $table->string('car_class', 20);
             $table->smallInteger('power')->nullable();
-            $table->float('hourly_rate', 8, 2);
+            $table->smallInteger('hourly_rate');
             $table->string('status', 20)->default('available');
 
             $table->foreignId('current_renter_id')->nullable()->constrained('clients');

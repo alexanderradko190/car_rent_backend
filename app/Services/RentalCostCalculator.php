@@ -2,7 +2,7 @@
 
 namespace App\Services;
 
-use App\Models\Car;
+use App\Models\Car\Car;
 use DateTime;
 
 class RentalCostCalculator

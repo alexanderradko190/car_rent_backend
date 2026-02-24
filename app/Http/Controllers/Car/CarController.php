@@ -21,9 +21,11 @@ class CarController extends Controller
 
     public function index(): JsonResponse
     {
+        $cars = $this->service->getAll();
+
         return response()->json([
             'message' => 'Список автомобилей',
-            'data' => $this->service->getAll(),
+            'data' => $cars
         ]);
     }
 
@@ -32,18 +34,31 @@ class CarController extends Controller
         $car = $this->service->find($id);
 
         if (!$car) {
-            return response()->json(['message' => 'Автомобиль не найден'], 404);
+            return response()->json([
+                'message' => 'Автомобиль не найден'],
+                404);
         }
 
         return response()->json([
-            'message' => 'Данные автомобиля',
-            'data' => $car,
+            'data' => $car
         ]);
     }
 
     public function store(CarCreateRequest $request): JsonResponse
     {
-        $dto = new CreateCarDTO(...$request->validated());
+        $data = $request->validated();
+
+        $dto = new CreateCarDTO(
+            $data['make'],
+            $data['model'],
+            $data['year'],
+            $data['vin'],
+            $data['license_plate'],
+            $data['power'],
+            $data['car_class'],
+            $data['hourly_rate']
+        );
+
         $car = $this->service->create($dto);
 
         return response()->json([
@@ -54,22 +69,20 @@ class CarController extends Controller
 
     public function update(CarUpdateRequest $request, $id): JsonResponse
     {
+        $data = $request->validated();
+
         $car = $this->service->find($id);
 
         if (!$car) {
             return response()->json(['message' => 'Автомобиль не найден'], 404);
         }
 
-        $result = $this->service->update($car, $request->validated());
-
-        if (isset($result['error'])) {
-            return response()->json(['message' => $result['error']], $result['code']);
-        }
+        $updatedCar = $this->service->update($car, $data);
 
         return response()->json([
-            'message' => $result['message'],
-            'data' => $result['data'],
-        ], $result['code']);
+            'message' => 'Автомобиль успешно обновлен',
+            'data' => $updatedCar,
+        ], 201);
     }
 
     public function destroy($id): JsonResponse
@@ -77,40 +90,72 @@ class CarController extends Controller
         $car = $this->service->find($id);
 
         if (!$car) {
-            return response()->json(['message' => 'Автомобиль не найден'], 404);
+            return response()->json([
+                'message' => 'Автомобиль не найден'
+            ], 404);
         }
-        $result = $this->service->delete($car);
 
-        return response()->json(['message' => $result['message']], $result['code']);
+        $this->service->delete($car);
+
+        return response()->json([
+            'message' => 'Автомобиль успешно удален'
+        ], 204);
     }
 
     public function available(): JsonResponse
     {
+        $availableCars = $this->service->available();
+
         return response()->json([
             'message' => 'Доступные автомобили',
-            'data' => $this->service->available(),
+            'data' => $availableCars
         ]);
     }
 
     public function changeStatus(CarChangeStatusRequest $request, Car $car): JsonResponse
     {
-        return response()->json($this->service->changeStatus($car, $request->input('status')));
+        $data = $request->validated();
+
+        $this->service->changeStatus($car, $data['status']);
+
+        return response()->json([
+            'message' => 'Статус автомобиля обновлен'
+        ], 201);
     }
 
     public function changeLicensePlate(CarChangeLicensePlateRequest $request, Car $car): JsonResponse
     {
-        return response()->json($this->service->changeLicensePlate($car, $request->input('license_plate')));
+        $data = $request->validated();
+
+        $this->service->changeLicensePlate($car, $data['license_plate']);
+
+        return response()->json([
+            'message' => 'Номер автомобиля обновлен'
+        ], 201);
     }
 
     public function changeRenter(CarChangeRenterRequest $request, Car $car): JsonResponse
     {
+        $data = $request->validated();
+
         $clientId = auth()->id();
-        return response()->json($this->service->changeRenter($car, $request->input('current_renter_id', $clientId)));
+
+        $this->service->changeRenter($car, $data['current_renter_id']);
+
+        return response()->json([
+            'message' => 'Арендатор автомобиля обновлен'
+        ], 201);
     }
 
     public function changeCarClassAndRate(CarChangeClassRequest $request, Car $car): JsonResponse
     {
-        return response()->json($this->service->changeCarClassAndRate($car, $request->input('car_class')));
+        $data = $request->validated();
+
+        $this->service->changeCarClassAndRate($car, $data['car_class']);
+
+        return response()->json([
+            'message' => 'Класс автомобиля обновлен'
+        ], 201);
     }
 
     public function export()

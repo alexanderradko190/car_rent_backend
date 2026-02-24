@@ -18,7 +18,7 @@ class CarCreateRequest extends ApiRequest
             'license_plate' => 'required|string|unique:cars,license_plate|max:15',
             'car_class' => ['required', new Enum(CarClass::class)],
             'power' => 'required|integer|min:50|max:1000',
-            'hourly_rate' => 'required|numeric|min:0.01',
+            'hourly_rate' => 'required|int|min:1',
         ];
     }
 
@@ -41,7 +41,6 @@ class CarCreateRequest extends ApiRequest
             'power.min' => 'Мощность должна быть не менее 50 л.с.',
             'power.max' => 'Мощность должна быть не более 1000 л.с.',
             'hourly_rate.required' => 'Укажите почасовую ставку',
-            'hourly_rate.numeric' => 'Стоимость аренды должна быть числом',
             'hourly_rate.min' => 'Стоимость аренды должна быть больше 0',
         ];
     }

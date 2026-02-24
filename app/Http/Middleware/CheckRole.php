@@ -7,12 +7,14 @@ use Illuminate\Http\Request;
 
 class CheckRole
 {
-    public function handle(Request $request, Closure $next, ...$roles)
+    public function handle(Request $request, Closure $next, string $role)
     {
         $user = auth()->user();
 
-        if (!$user || !in_array($user->role->value, $roles)) {
-            return response()->json(['error' => 'Доступ запрещен'], 403);
+        if ($user->role->value != $role) {
+            return response()->json([
+                'error' => 'Доступ запрещен'
+            ], 403);
         }
 
         return $next($request);

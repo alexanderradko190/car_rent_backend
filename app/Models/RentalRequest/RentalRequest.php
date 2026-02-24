@@ -8,6 +8,7 @@ use App\Models\Client\Client;
 use Database\Factories\RentalRequestFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class RentalRequest extends Model
 {
@@ -36,12 +37,12 @@ class RentalRequest extends Model
         return RentalRequestFactory::new();
     }
 
-    public function client()
+    public function client(): BelongsTo
     {
         return $this->belongsTo(Client::class, 'client_id');
     }
 
-    public function car()
+    public function car(): BelongsTo
     {
         return $this->belongsTo(Car::class, 'car_id');
     }

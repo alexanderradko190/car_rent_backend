@@ -2,17 +2,13 @@
 
 namespace App\Http\Requests\Car;
 
+use App\Http\Requests\ApiRequest;
 use Illuminate\Foundation\Http\FormRequest;
 use App\Enums\Car\CarClass;
 use Illuminate\Validation\Rule;
 
-class CarChangeClassRequest extends FormRequest
+class CarChangeClassRequest extends ApiRequest
 {
-    public function authorize(): bool
-    {
-        return true;
-    }
-
     public function rules(): array
     {
         return [

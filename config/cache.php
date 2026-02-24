@@ -17,6 +17,8 @@ return [
 
     'default' => env('CACHE_STORE', 'database'),
 
+    'on' => env('CACHE_IS_ON', false),
+
     /*
     |--------------------------------------------------------------------------
     | Cache Stores

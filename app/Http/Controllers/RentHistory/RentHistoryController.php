@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\RentHistory;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\RentHistory\RentHistoryRequest;
 use App\Services\RentHistory\RentHistoryService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Validation\Rule;
@@ -12,36 +14,32 @@ class RentHistoryController extends Controller
 {
     public function __construct(private RentHistoryService $service)
     {
+        //
     }
 
-    public function index(Request $request)
+    public function index(RentHistoryRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'sort_by' => [
-                'nullable',
-                Rule::in([
-                    'id', 'car_id', 'client_id', 'start_time', 'end_time', 'total_cost',
-                    'car_make', 'car_model', 'client_full_name'
-                ])
-            ],
-            'sort_order' => ['nullable', Rule::in(['asc', 'desc'])],
-            'client_id' => 'nullable|integer',
-            'car_id' => 'nullable|integer',
-            'year' => 'nullable|integer',
-            'make' => 'nullable|string',
-            'model' => 'nullable|string',
+        $data = $request->validated();
+
+        $filters = $request->only([
+            'client_id',
+            'car_id',
+            'year',
+            'make',
+            'model'
         ]);
 
-        $filters = $request->only(['client_id', 'car_id', 'year', 'make', 'model']);
-        $sortBy = $validated['sort_by'] ?? null;
-        $sortOrder = $validated['sort_order'] ?? 'asc';
+        $sortBy = $data['sort_by'] ?? null;
+        $sortOrder = $data['sort_order'] ?? 'asc';
 
         $data = $this->service->filterAndSort($filters, $sortBy, $sortOrder);
 
-        return response()->json(['data' => $data]);
+        return response()->json([
+            'data' => $data
+        ]);
     }
 
-    public function show($id)
+    public function show($id): JsonResponse
     {
         $history = $this->service->find($id);
 
@@ -49,20 +47,26 @@ class RentHistoryController extends Controller
             return response()->json(['message' => 'История не найдена'], 404);
         }
 
-        return response()->json(['data' => $history]);
+        return response()->json([
+            'data' => $history
+        ]);
     }
 
-    public function destroy($id)
+    public function destroy($id): JsonResponse
     {
         $history = $this->service->find($id);
 
         if (!$history) {
-            return response()->json(['message' => 'История не найдена'], 404);
+            return response()->json([
+                'message' => 'История не найдена'
+            ], 404);
         }
 
         $this->service->delete($history);
 
-        return response()->json(['message' => 'История удалена']);
+        return response()->json([
+            'message' => 'История удалена'
+        ]);
     }
 
     public function export(Request $request)
