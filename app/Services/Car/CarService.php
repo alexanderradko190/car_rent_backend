@@ -12,7 +12,11 @@ use Illuminate\Support\Collection;
 
 class CarService
 {
-    public function __construct(private CarRepositoryInterface $repository){}
+    public function __construct(
+        private CarRepositoryInterface $repository
+    ) {
+        //
+    }
 
     public function find(int $id): ?Car
     {
@@ -50,29 +54,34 @@ class CarService
         $currentRenterId = $data['current_renter_id'] ?? null;
 
         if (!CarStatus::tryFrom($status)) {
-            return ['error' => 'Указан недопустимый статус автомобиля', 'code' => 400];
+            return [
+                'error' => 'Указан недопустимый статус автомобиля'
+            ];
         }
 
         if ($car->status->value === $status) {
-            return ['error' => 'Автомобиль уже находится в данном статусе', 'code' => 400];
+            return [
+                'error' => 'Автомобиль уже арендован'
+            ];
         }
 
         if ($currentRenterId && !User::find($currentRenterId)) {
-            return ['error' => 'Арендатор не найден в системе', 'code' => 400];
+            return [
+                'error' => 'Арендатор не найден в системе'
+            ];
         }
 
         $car = $this->repository->update($car, $data);
 
         if (!$car) {
             return [
-                'message' => 'Не удалось обновить автомобиль'
+                'error' => 'Не удалось обновить автомобиль'
             ];
         }
 
         return [
             'message' => 'Данные автомобиля обновлены',
-            'data' => $car,
-            'code' => 200,
+            'data' => $car
         ];
     }
 
@@ -97,7 +106,7 @@ class CarService
 
         if ($car->status->value === $status) {
             return [
-                'error' => 'Автомобиль уже находится в данном статусе',
+                'error' => 'Автомобиль уже арендован',
                 'code' => 400
             ];
         }
@@ -107,21 +116,18 @@ class CarService
         return [
             'message' => 'Статус автомобиля изменён',
             'data' => $car,
-            'code' => 200,
+            'code' => 200
         ];
     }
 
     public function changeRenter(Car $car, ?int $renterId): array
     {
-        if ($renterId !== null && !User::find($renterId)) {
-            return ['error' => 'Арендатор не найден в системе', 'code' => 400];
-        }
         $car = $this->repository->update($car, ['current_renter_id' => $renterId]);
 
         return [
             'message' => 'Арендатор обновлён',
             'data' => $car,
-            'code' => 200,
+            'code' => 200
         ];
     }
 
@@ -138,24 +144,30 @@ class CarService
     public function changeCarClassAndRate(Car $car, string $carClass): array
     {
         if (!CarClass::tryFrom($carClass)) {
-            return ['error' => 'Указан недопустимый класс автомобиля', 'code' => 400];
+            return [
+                'error' => 'Указан недопустимый класс автомобиля',
+                'code' => 400
+            ];
         }
 
         if ($car->car_class->value === $carClass) {
-            return ['error' => 'Класс автомобиля уже выбран', 'code' => 400];
+            return [
+                'error' => 'Класс автомобиля уже выбран',
+                'code' => 400
+            ];
         }
 
         $rate = CarClass::from($carClass)->hourlyRate();
 
         $car = $this->repository->update($car, [
             'car_class' => $carClass,
-            'hourly_rate' => $rate,
+            'hourly_rate' => $rate
         ]);
 
         return [
             'message' => 'Класс автомобиля и ставка обновлены',
             'data' => $car,
-            'code' => 200,
+            'code' => 200
         ];
     }
 }

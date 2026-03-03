@@ -10,7 +10,7 @@ class CarChangeRenterRequest extends ApiRequest
     public function rules(): array
     {
         return [
-            'current_renter_id' => ['nullable', 'integer', 'exists:users,id'],
+            'current_renter_id' => 'nullable|integer|exists:clients,id'
         ];
     }
 

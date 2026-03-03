@@ -17,7 +17,11 @@ use Illuminate\Http\JsonResponse;
 
 class CarController extends Controller
 {
-    public function __construct(private CarService $service) {}
+    public function __construct(
+        private CarService $service
+    ) {
+        //
+    }
 
     public function index(): JsonResponse
     {
@@ -79,9 +83,15 @@ class CarController extends Controller
 
         $updatedCar = $this->service->update($car, $data);
 
+        if (isset($updatedCar['error'])) {
+            return response()->json([
+                'message' => $updatedCar['error']
+            ], 400);
+        }
+
         return response()->json([
             'message' => 'Автомобиль успешно обновлен',
-            'data' => $updatedCar,
+            'data' => $updatedCar
         ], 201);
     }
 
@@ -137,8 +147,6 @@ class CarController extends Controller
     public function changeRenter(CarChangeRenterRequest $request, Car $car): JsonResponse
     {
         $data = $request->validated();
-
-        $clientId = auth()->id();
 
         $this->service->changeRenter($car, $data['current_renter_id']);
 

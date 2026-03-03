@@ -9,8 +9,9 @@ use Illuminate\Database\Eloquent\Collection;
 
 class ClientService
 {
-    public function __construct(private ClientRepository $repository)
-    {
+    public function __construct(
+        private ClientRepository $repository
+    ) {
         //
     }
 

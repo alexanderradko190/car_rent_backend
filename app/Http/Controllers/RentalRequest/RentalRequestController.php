@@ -10,8 +10,9 @@ use Illuminate\Http\JsonResponse;
 
 class RentalRequestController extends Controller
 {
-    public function __construct(private RentalRequestService $service)
-    {
+    public function __construct(
+        private RentalRequestService $service
+    ) {
         //
     }
 
@@ -39,32 +40,45 @@ class RentalRequestController extends Controller
 
     public function store(RentalRequestRequest $request): JsonResponse
     {
-        $validated = $request->validated();
-        $validated['client_id'] = auth()->id();
+        $data = $request->validated();
 
-        $dto = new CreateRentalRequestDTO(...$validated);
+        $client = auth()->user()?->client;
+
+        if (!$client) {
+            return response()->json([
+                'message' => 'Вы не являетесь клиентом'
+            ], 422);
+        }
+
+        $dto = new CreateRentalRequestDTO(
+            $client->id,
+            $data['car_id'],
+            $data['start_time'],
+            $data['end_time'],
+            $data['insurance_option'],
+            $data['agreement_accepted']
+        );
 
         $result = $this->service->create($dto);
 
-        if (!$result) {
-            return response()->json([
-                'message' => 'Не удалось создать заявку на аренду'
-            ], 400);
+        if (isset($result['error'])) {
+            return response()->json($result, 400);
         }
 
         return response()->json([
-            'message' => 'Заявка на аренду создана'
+            'message' => 'Заявка на аренду создана',
+            'data' => $result['data']
         ], 201);
     }
 
     public function approve($id): JsonResponse
     {
-        $result = $this->service->approve($id);
+        $rentRequest = $this->service->approve($id);
 
-        if (!$result) {
+        if (isset($rentRequest['error'])) {
             return response()->json([
-                'message' => 'Не удалось подтвердить заявку на аренду'
-            ], 400);
+                'message' => $rentRequest['error']
+            ], 404);
         }
 
         return response()->json([
@@ -74,12 +88,12 @@ class RentalRequestController extends Controller
 
     public function reject($id): JsonResponse
     {
-        $result = $this->service->reject($id);
+        $rentRequest = $this->service->reject($id);
 
-        if (!$result) {
+        if (isset($rentRequest['error'])) {
             return response()->json([
-                'message' => 'Не удалось отклонить заявку на аренду'
-            ], 400);
+                'message' => $rentRequest['error']
+            ], 404);
         }
 
         return response()->json([
@@ -89,12 +103,12 @@ class RentalRequestController extends Controller
 
     public function complete($id): JsonResponse
     {
-        $result = $this->service->complete($id);
+        $rentRequest = $this->service->complete($id);
 
-        if (!$result) {
+        if (isset($rentRequest['error'])) {
             return response()->json([
-                'message' => 'Не удалось завершить аренду'
-            ], 400);
+                'message' => $rentRequest['error']
+            ], 404);
         }
 
         return response()->json([
@@ -104,12 +118,12 @@ class RentalRequestController extends Controller
 
     public function destroy($id): JsonResponse
     {
-        $result = $this->service->delete($id);
+        $rentRequest = $this->service->delete($id);
 
-        if (!$result) {
+        if (isset($rentRequest['error'])) {
             return response()->json([
-                'message' => 'Не удалось удалить заявку на аренду'
-            ], 400);
+                'message' => $rentRequest['error']
+            ], 404);
         }
 
         return response()->json([

@@ -28,11 +28,6 @@ class RentHistoryService
         return $this->repository->find($id);
     }
 
-    public function delete(RentHistory $history): void
-    {
-        $this->repository->delete($history);
-    }
-
     public function filterAndSort(array $filters, ?string $sortBy, string $sortOrder): Collection
     {
         return $this->repository->filterAndSort($filters, $sortBy, $sortOrder);

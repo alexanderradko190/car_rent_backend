@@ -8,12 +8,12 @@ use App\Services\RentHistory\RentHistoryService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Validation\Rule;
 
 class RentHistoryController extends Controller
 {
-    public function __construct(private RentHistoryService $service)
-    {
+    public function __construct(
+        private RentHistoryService $service
+    ) {
         //
     }
 
@@ -44,28 +44,13 @@ class RentHistoryController extends Controller
         $history = $this->service->find($id);
 
         if (!$history) {
-            return response()->json(['message' => 'История не найдена'], 404);
-        }
-
-        return response()->json([
-            'data' => $history
-        ]);
-    }
-
-    public function destroy($id): JsonResponse
-    {
-        $history = $this->service->find($id);
-
-        if (!$history) {
             return response()->json([
                 'message' => 'История не найдена'
             ], 404);
         }
 
-        $this->service->delete($history);
-
         return response()->json([
-            'message' => 'История удалена'
+            'data' => $history
         ]);
     }
 

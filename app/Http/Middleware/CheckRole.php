@@ -11,7 +11,15 @@ class CheckRole
     {
         $user = auth()->user();
 
-        if ($user->role->value != $role) {
+        if (!$user) {
+            return response()->json([
+                'error' => 'Пользователь не авторизован'
+            ], 401);
+        }
+
+        $roles = explode('|', $role);
+
+        if (!in_array($user->role->value, $roles)) {
             return response()->json([
                 'error' => 'Доступ запрещен'
             ], 403);

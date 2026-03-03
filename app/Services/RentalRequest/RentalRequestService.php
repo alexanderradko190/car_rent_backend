@@ -12,9 +12,11 @@ use App\Repositories\RentalRequest\RentalRequestRepository;
 use App\Services\RentalCostCalculator;
 use App\Services\RentHistory\RentHistoryService;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 use App\Notifications\RentalApprovedNotification;
 use Illuminate\Support\Facades\Storage;
+use Throwable;
 
 class RentalRequestService
 {
@@ -22,9 +24,10 @@ class RentalRequestService
         private RentalRequestRepository $repository,
         private CarRepositoryInterface   $carRepo,
         private ClientRepository        $clientRepo,
-        private RentalCostCalculator    $costCalculator
-    )
-    {
+        private RentalCostCalculator    $costCalculator,
+        private RentHistoryService    $rentHistoryService
+    ) {
+        //
     }
 
     public function all()
@@ -40,13 +43,18 @@ class RentalRequestService
     public function create(CreateRentalRequestDTO $dto): array
     {
         if ($this->repository->intersecting($dto->car_id, $dto->start_time, $dto->end_time)) {
-            return ['error' => 'Автомобиль уже забронирован на этот период'];
+
+            return [
+                'error' => 'Автомобиль уже забронирован на этот период'
+            ];
         }
 
         $car = $this->carRepo->find($dto->car_id);
 
         if (!$car) {
-            return ['error' => 'Автомобиль не найден'];
+            return [
+                'error' => 'Автомобиль не найден'
+            ];
         }
 
         $total = $this->costCalculator->calculate($car, $dto->start_time, $dto->end_time, $dto->insurance_option);
@@ -80,25 +88,39 @@ class RentalRequestService
         $request = $this->repository->find($id);
 
         if (!$request) {
-            return ['error' => 'Заявка не найдена'];
+            return [
+                'error' => 'Заявка не найдена'
+            ];
         }
 
-        if ($request->status !== RentalStatus::PENDING) {
-            return ['error' => 'Заявка уже обработана'];
+        if ($request->status->value !== RentalStatus::PENDING->value) {
+            return [
+                'error' => 'Заявка уже обработана'
+            ];
         }
 
         $request->status = RentalStatus::APPROVED->value;
         $request->save();
 
         $car = $this->carRepo->find($request->car_id);
-        $this->carRepo->update($car, ['status' => CarStatus::RENTED->value, 'client_id' => $request->client_id]);
 
-        $client = $this->clientRepo->find($request->client_id);
-        if ($client && $client->email) {
-            Notification::route('mail', $client->email)->notify(new RentalApprovedNotification($request));
+        if ($car) {
+            $this->carRepo->update($car, [
+                'status' => CarStatus::RENTED->value,
+                'current_renter_id' => $request->client_id,
+            ]);
         }
 
-        return ['message' => 'Заявка одобрена', 'data' => $request];
+        $client = $this->clientRepo->find($request->client_id);
+
+        if ($client && $client->email) {
+            Notification::route('mail', $client->email)
+                ->notify(new RentalApprovedNotification($request));
+        }
+
+        return [
+            'data' => $request
+        ];
     }
 
     public function reject($id): array
@@ -106,17 +128,24 @@ class RentalRequestService
         $request = $this->repository->find($id);
 
         if (!$request) {
-            return ['error' => 'Заявка не найдена'];
+            return [
+                'error' => 'Заявка не найдена'
+            ];
         }
 
-        if ($request->status !== RentalStatus::PENDING) {
-            return ['error' => 'Заявка уже обработана'];
+        if ($request->status->value !== RentalStatus::PENDING->value) {
+            return [
+                'error' => 'Заявка уже обработана'
+            ];
         }
 
         $request->status = RentalStatus::REJECTED->value;
+
         $request->save();
 
-        return ['message' => 'Заявка отклонена'];
+        return [
+            'message' => 'Заявка отклонена'
+        ];
     }
 
     public function complete($id): array
@@ -127,24 +156,39 @@ class RentalRequestService
             return ['error' => 'Заявка не найдена'];
         }
 
-        if ($request->status !== RentalStatus::APPROVED) {
+        if ($request->status->value !== RentalStatus::APPROVED->value) {
             return ['error' => 'Аренда должна быть одобрена для завершения'];
         }
 
-        $request->status = RentalStatus::COMPLETED->value;
-        $request->save();
+        try {
+            DB::transaction(function () use ($request) {
+                $request->status = RentalStatus::COMPLETED->value;
+                $request->save();
 
-        $historyData = [
-            'car_id' => $request->car_id,
-            'client_id' => $request->client_id,
-            'start_time' => $request->start_time,
-            'end_time' => now(),
-            'total_cost' => $request->total_cost,
-        ];
+                $historyData = [
+                    'car_id'     => $request->car_id,
+                    'client_id'  => $request->client_id,
+                    'start_time' => $request->start_time,
+                    'end_time'   => now(),
+                    'total_cost' => $request->total_cost,
+                ];
 
-        app(RentHistoryService::class)->create($historyData);
+                $history = $this->rentHistoryService->create($historyData);
 
-        return ['message' => 'Аренда завершена и добавлена в историю', 'data' => $request];
+                if (!$history || !$history->id) {
+                    throw new \RuntimeException('Не удалось сохранить историю аренды');
+                }
+            });
+
+            return [
+                'message' => 'Аренда завершена'
+            ];
+        } catch (Throwable $e) {
+
+            return [
+                'error' => 'Не удалось завершить аренду'
+            ];
+        }
     }
 
     public function delete($id): array
@@ -156,6 +200,13 @@ class RentalRequestService
                 'error' => 'Заявка не найдена'
             ];
         }
+
+        if ($request->status->value === (RentalStatus::APPROVED->value || RentalStatus::COMPLETED->value)) {
+            return [
+                'error' => 'Можно удалить заявку только в статусах "На рассмотрении" или "Отклонена"'
+            ];
+        }
+
         $this->repository->delete($request);
 
         return [

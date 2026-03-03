@@ -22,11 +22,6 @@ class RentHistoryRepository
         return RentHistory::find($id);
     }
 
-    public function delete(RentHistory $history): void
-    {
-        $history->delete();
-    }
-
     public function filterAndSort(array $filters, ?string $sortBy, string $sortOrder): Collection
     {
         $query = RentHistory::with(['car', 'client']);

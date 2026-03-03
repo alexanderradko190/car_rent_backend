@@ -14,8 +14,9 @@ use Illuminate\Support\Facades\Storage;
 
 class ClientController extends Controller
 {
-    public function __construct(private ClientService $service)
-    {
+    public function __construct(
+        private ClientService $service
+    ) {
         //
     }
 
