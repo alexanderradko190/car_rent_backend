@@ -3,9 +3,9 @@
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Car\CarController;
 use App\Http\Controllers\Client\ClientController;
-use App\Http\Controllers\Export\ExportController;
 use App\Http\Controllers\RentalRequest\RentalRequestController;
 use App\Http\Controllers\RentHistory\RentHistoryController;
+use App\Http\Controllers\Report\ReportExportController;
 use App\Http\Middleware\CheckRole;
 use Illuminate\Support\Facades\Route;
 
@@ -28,7 +28,11 @@ Route::middleware('jwt.auth')->group(function () {
         Route::apiResource('rent_histories', RentHistoryController::class)
             ->except(['store', 'update']);
 
-        Route::get('export/{type}', [ExportController::class, 'export']);
+        Route::post('reports', [ReportExportController::class, 'create']);
+        Route::get('reports/{id}/status', [ReportExportController::class, 'getReportStatus']);
+        Route::get('reports', [ReportExportController::class, 'getFinishedReports']);
+        Route::get('reports/{id}/download', [ReportExportController::class, 'download'])
+            ->name('reports.download');
     });
 
 //    Admin, Manager

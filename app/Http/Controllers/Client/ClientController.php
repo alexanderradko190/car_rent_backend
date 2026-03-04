@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Client\ClientCreateRequest;
 use App\Http\Requests\Client\ClientLicenseScanRequest;
 use App\Http\Requests\Client\ClientUpdateRequest;
-use App\Models\Client\Client;
 use App\Services\Client\ClientService;
 use App\DTO\Client\CreateClientDTO;
 use Illuminate\Http\JsonResponse;
@@ -143,52 +142,6 @@ class ClientController extends Controller
 
         return response()->json([
             'message' => 'Клиент удалён'
-        ]);
-    }
-
-    public function export()
-    {
-        $header = [
-            'id' => 'ID',
-            'full_name' => 'ФИО',
-            'age' => 'Возраст',
-            'phone' => 'Телефон',
-            'email' => 'Email',
-            'driving_experience' => 'Опыт вождения',
-            'license_scan' => 'Вод. удостоверение',
-            'created_at' => 'Дата создания',
-            'updated_at' => 'Дата изменения'
-        ];
-
-        $callback = function () use ($header) {
-            $handle = fopen('php://output', 'w');
-            // BOM для Excel
-            fwrite($handle, "\xEF\xBB\xBF");
-            // Русские заголовки
-            fputcsv($handle, array_values($header), ';');
-
-            // Данные клиентов (ленивая загрузка)
-            foreach (Client::cursor() as $client) {
-                $row = [
-                    $client->id,
-                    $client->full_name,
-                    $client->age,
-                    $client->phone,
-                    $client->email,
-                    $client->driving_experience,
-                    $client->license_scan,
-                    $client->created_at,
-                    $client->updated_at,
-                ];
-                fputcsv($handle, $row, ';');
-            }
-            fclose($handle);
-        };
-
-        return response()->stream($callback, 200, [
-            'Content-Type' => 'text/csv; charset=UTF-8',
-            'Content-Disposition' => 'attachment; filename="clients.csv"',
-            'Cache-Control' => 'no-store, no-cache',
         ]);
     }
 }

@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Car;
 
 use App\DTO\Car\CreateCarDTO;
-use App\Enums\Car\CarStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Car\CarChangeClassRequest;
 use App\Http\Requests\Car\CarChangeLicensePlateRequest;
@@ -164,55 +163,5 @@ class CarController extends Controller
         return response()->json([
             'message' => 'Класс автомобиля обновлен'
         ], 201);
-    }
-
-    public function export()
-    {
-        $cars = $this->service->getAll();
-        $header = [
-            'ID',
-            'Марка',
-            'Модель',
-            'Год',
-            'VIN',
-            'Гос. номер',
-            'Статус',
-            'Мощность',
-            'Класс',
-            'Тариф (руб/час)',
-            'Дата создания',
-            'Дата изменения',
-        ];
-
-        $handle = fopen('php://temp', 'r+');
-        fwrite($handle, "\xEF\xBB\xBF");
-
-        fputcsv($handle, $header, ';');
-
-        foreach ($cars as $car) {
-            $row = [
-                $car->id,
-                $car->make,
-                $car->model,
-                $car->year,
-                $car->vin,
-                $car->license_plate,
-                $car->status instanceof CarStatus ? $car->status->label() : $car->status,
-                $car->power,
-                $car->car_class?->label() ?? $car->car_class,
-                $car->hourly_rate,
-                $car->created_at,
-                $car->updated_at,
-            ];
-            fputcsv($handle, $row, ';');
-        }
-
-        rewind($handle);
-        $csv = stream_get_contents($handle);
-        fclose($handle);
-
-        return response($csv)
-            ->header('Content-Type', 'text/csv; charset=UTF-8')
-            ->header('Content-Disposition', 'attachment; filename="cars.csv"');
     }
 }

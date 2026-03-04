@@ -35,4 +35,8 @@ return [
         ],
     ],
 
+    'go_export' => [
+        'base_uri' => env('GO_EXPORT_BASE_URI', 'http://go-export:8002'),
+    ],
+
 ];

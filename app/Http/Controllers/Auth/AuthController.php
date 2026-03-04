@@ -38,7 +38,9 @@ class AuthController extends Controller
         $data = $request->validated();
 
         if (!$token = auth('api')->attempt($data)) {
-            return response()->json(['error' => 'Неверный email или пароль'], 401);
+            return response()->json([
+                'error' => 'Неверный email или пароль'
+            ], 401);
         }
 
         $user = auth('api')->user();
