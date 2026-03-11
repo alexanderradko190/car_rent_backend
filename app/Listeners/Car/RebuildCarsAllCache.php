@@ -1,8 +1,8 @@
 <?php
 
-namespace App\Listeners;
+namespace App\Listeners\Car;
 
-use App\Events\CarChanged;
+use App\Events\Car\CarChanged;
 use App\Models\Car\Car;
 use Illuminate\Contracts\Cache\Repository as Cache;
 

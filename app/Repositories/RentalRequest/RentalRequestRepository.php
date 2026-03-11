@@ -55,4 +55,11 @@ class RentalRequestRepository
                     });
             })->exists();
     }
+
+    public function findWithClientAndCar(int $id): ?RentalRequest
+    {
+        return RentalRequest::query()
+            ->with(['client', 'car'])
+            ->find($id);
+    }
 }

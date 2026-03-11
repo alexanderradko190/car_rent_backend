@@ -5,6 +5,7 @@ namespace App\Services\RentalRequest;
 use App\DTO\RentalRequest\CreateRentalRequestDTO;
 use App\Enums\Car\CarStatus;
 use App\Enums\Car\RentalStatus;
+use App\Events\RentalRequest\RentalRequestIsCompleted;
 use App\Models\RentalRequest\RentalRequest;
 use App\Repositories\Car\CarRepositoryInterface;
 use App\Repositories\Client\ClientRepository;
@@ -13,9 +14,8 @@ use App\Services\RentalCostCalculator;
 use App\Services\RentHistory\RentHistoryService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Notification;
-use App\Notifications\RentalApprovedNotification;
 use Illuminate\Support\Facades\Storage;
+use RuntimeException;
 use Throwable;
 
 class RentalRequestService
@@ -111,13 +111,6 @@ class RentalRequestService
             ]);
         }
 
-        $client = $this->clientRepo->find($request->client_id);
-
-        if ($client && $client->email) {
-            Notification::route('mail', $client->email)
-                ->notify(new RentalApprovedNotification($request));
-        }
-
         return [
             'data' => $request
         ];
@@ -150,41 +143,57 @@ class RentalRequestService
 
     public function complete($id): array
     {
-        $request = $this->repository->withClient($id);
+        $rentalRequest = $this->repository->findWithClientAndCar($id);
 
-        if (!$request) {
-            return ['error' => 'Заявка не найдена'];
+        if (!$rentalRequest) {
+            return [
+                'error' => 'Заявка не найдена'
+            ];
         }
 
-        if ($request->status->value !== RentalStatus::APPROVED->value) {
-            return ['error' => 'Аренда должна быть одобрена для завершения'];
+        if ($rentalRequest->status->value !== RentalStatus::APPROVED->value) {
+            return [
+                'error' => 'Аренда должна быть одобрена для завершения'
+            ];
         }
 
         try {
-            DB::transaction(function () use ($request) {
-                $request->status = RentalStatus::COMPLETED->value;
-                $request->save();
+            $rentHistory = null;
 
-                $historyData = [
-                    'car_id'     => $request->car_id,
-                    'client_id'  => $request->client_id,
-                    'start_time' => $request->start_time,
-                    'end_time'   => now(),
-                    'total_cost' => $request->total_cost,
-                ];
+            DB::transaction(function () use (&$rentHistory, $rentalRequest) {
+                $rentalRequest->status = RentalStatus::COMPLETED->value;
+                $rentalRequest->end_time = now();
+                $rentalRequest->save();
 
-                $history = $this->rentHistoryService->create($historyData);
+                $rentHistory = $this->rentHistoryService->create([
+                    'car_id'     => $rentalRequest->car_id,
+                    'client_id'  => $rentalRequest->client_id,
+                    'start_time' => $rentalRequest->start_time,
+                    'end_time'   => $rentalRequest->end_time,
+                    'total_cost' => $rentalRequest->total_cost,
+                ]);
 
-                if (!$history || !$history->id) {
-                    throw new \RuntimeException('Не удалось сохранить историю аренды');
+                if (!$rentHistory || !$rentHistory->id) {
+                    throw new RuntimeException('Не удалось сохранить историю аренды');
                 }
+
+                $this->carRepo->update($rentalRequest->car, [
+                    'status' => CarStatus::AVAILABLE->value,
+                    'current_renter_id' => null,
+                ]);
             });
+
+            event(new RentalRequestIsCompleted(
+                rentalRequest: $rentalRequest,
+                rentHistory: $rentHistory,
+                car: $rentalRequest->car->fresh(),
+                client: $rentalRequest->client
+            ));
 
             return [
                 'message' => 'Аренда завершена'
             ];
         } catch (Throwable $e) {
-
             return [
                 'error' => 'Не удалось завершить аренду'
             ];

@@ -2,9 +2,11 @@
 
 namespace App\Providers;
 
+use App\Events\Car\CarChanged;
+use App\Events\RentalRequest\RentalRequestIsCompleted;
+use App\Listeners\Car\RebuildCarsAllCache;
+use App\Listeners\RentalRequest\SendRentalCompletedEmail;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
-use App\Events\CarChanged;
-use App\Listeners\RebuildCarsAllCache;
 
 class EventServiceProvider extends ServiceProvider
 {
@@ -16,6 +18,10 @@ class EventServiceProvider extends ServiceProvider
     protected $listen = [
         CarChanged::class => [
             RebuildCarsAllCache::class,
+        ],
+
+        RentalRequestIsCompleted::class => [
+            SendRentalCompletedEmail::class,
         ],
     ];
 

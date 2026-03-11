@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Events;
+namespace App\Events\Car;
 
 use App\Models\Car\Car;
 use Illuminate\Foundation\Events\Dispatchable;
