@@ -127,7 +127,7 @@ class ClientController extends Controller
 
         if ($client->car) {
             return response()->json([
-                'message' => 'Нельхя удалить клиента, который привязан к автомобилю'
+                'message' => 'Нельзя удалить клиента, который привязан к автомобилю'
             ], 400);
         }
 

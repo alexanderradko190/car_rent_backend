@@ -33,8 +33,7 @@ class AgreementDeliveryService
 
     public function sendForRentalRequestId(
         int $rentalRequestId,
-        ?int $rentHistoryId = null,
-        bool $force = false
+        ?int $rentHistoryId = null
     ): AgreementDelivery
     {
         $rentalRequest = RentalRequest::query()
@@ -65,17 +64,16 @@ class AgreementDeliveryService
             throw new RuntimeException('Клиент не найден', 404);
         }
 
-        return $this->send($rentalRequest, $rentHistory, $car, $client, $force);
+        return $this->send($rentalRequest, $rentHistory, $car, $client);
     }
 
     private function send(
         RentalRequest $rentalRequest,
         RentHistory $rentHistory,
         Car $car,
-        Client $client,
-        bool $force,
+        Client $client
     ): AgreementDelivery {
-        $attempt = $this->createAttempt($rentalRequest, $rentHistory, $car, $client, $force);
+        $attempt = $this->createAttempt($rentalRequest, $rentHistory, $car, $client);
 
         if (!$attempt->wasRecentlyCreated) {
             return $attempt;
@@ -121,9 +119,8 @@ class AgreementDeliveryService
         RentHistory $rentHistory,
         Car $car,
         Client $client,
-        bool $force,
     ): AgreementDelivery {
-        return DB::transaction(function () use ($rentalRequest, $rentHistory, $car, $client, $force) {
+        return DB::transaction(function () use ($rentalRequest, $rentHistory, $car, $client) {
             RentalRequest::query()
                 ->whereKey($rentalRequest->id)
                 ->lockForUpdate()
@@ -132,10 +129,7 @@ class AgreementDeliveryService
             $existing = AgreementDelivery::query()
                 ->where('rental_request_id', $rentalRequest->id)
                 ->where('rent_history_id', $rentHistory->id)
-                ->whereIn('status', $force
-                    ? [ReportStatus::PROCESSING->value]
-                    : [ReportStatus::PROCESSING->value, ReportStatus::FINISHED->value]
-                )
+                ->where('status', ReportStatus::PROCESSING->value)
                 ->orderByDesc('id')
                 ->first();
 

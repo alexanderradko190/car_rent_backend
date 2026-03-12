@@ -111,12 +111,9 @@ class RentalRequestController extends Controller
     {
         $data = $request->validated();
 
-        $force = array_key_exists('force', $data) ? (bool) $data['force'] : true;
-
         $attempt = $this->agreementDeliveryService->sendForRentalRequestId(
             $id,
-            $data['rent_history_id'] ?? null,
-            $force
+            $data['rent_history_id']
         );
 
         return response()->json([
