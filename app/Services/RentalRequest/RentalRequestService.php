@@ -6,15 +6,16 @@ use App\DTO\RentalRequest\CreateRentalRequestDTO;
 use App\Enums\Car\CarStatus;
 use App\Enums\Car\RentalStatus;
 use App\Events\RentalRequest\RentalRequestIsCompleted;
+use App\Exceptions\ServiceException;
 use App\Models\RentalRequest\RentalRequest;
 use App\Repositories\Car\CarRepositoryInterface;
 use App\Repositories\Client\ClientRepository;
 use App\Repositories\RentalRequest\RentalRequestRepository;
+use App\Services\RentalRequest\AgreementService;
 use App\Services\RentalCostCalculator;
 use App\Services\RentHistory\RentHistoryService;
-use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 use RuntimeException;
 use Throwable;
 
@@ -22,39 +23,35 @@ class RentalRequestService
 {
     public function __construct(
         private RentalRequestRepository $repository,
-        private CarRepositoryInterface   $carRepo,
-        private ClientRepository        $clientRepo,
+        private CarRepositoryInterface   $carRepository,
+        private ClientRepository        $clientRepository,
+        private AgreementService        $agreementService,
         private RentalCostCalculator    $costCalculator,
         private RentHistoryService    $rentHistoryService
     ) {
         //
     }
 
-    public function all()
+    public function all(): Collection
     {
         return $this->repository->all();
     }
 
-    public function find($id)
+    public function find($id): ?RentalRequest
     {
         return $this->repository->find($id);
     }
 
-    public function create(CreateRentalRequestDTO $dto): array
+    public function create(CreateRentalRequestDTO $dto): RentalRequest
     {
         if ($this->repository->intersecting($dto->car_id, $dto->start_time, $dto->end_time)) {
-
-            return [
-                'error' => 'Автомобиль уже забронирован на этот период'
-            ];
+            throw new ServiceException('Автомобиль уже забронирован на этот период', 400);
         }
 
-        $car = $this->carRepo->find($dto->car_id);
+        $car = $this->carRepository->find($dto->car_id);
 
         if (!$car) {
-            return [
-                'error' => 'Автомобиль не найден'
-            ];
+            throw new ServiceException('Автомобиль не найден', 404);
         }
 
         $total = $this->costCalculator->calculate($car, $dto->start_time, $dto->end_time, $dto->insurance_option);
@@ -73,88 +70,67 @@ class RentalRequestService
         $request = $this->repository->withClient($request->id);
         $request = $this->repository->withCar($request->id);
 
-        $agreementPath = $this->generateAgreement($request);
-        $request->agreement_path = $agreementPath;
+        $this->agreementService->ensureAgreementExists($request);
 
-        $request->save();
-
-        return [
-            'data' => $request
-        ];
+        return $request;
     }
 
-    public function approve($id): array
+    public function approve($id): RentalRequest
     {
         $request = $this->repository->find($id);
 
         if (!$request) {
-            return [
-                'error' => 'Заявка не найдена'
-            ];
+            throw new ServiceException('Заявка не найдена', 404);
         }
 
         if ($request->status->value !== RentalStatus::PENDING->value) {
-            return [
-                'error' => 'Заявка уже обработана'
-            ];
+            throw new ServiceException('Заявка уже обработана', 400);
         }
 
         $request->status = RentalStatus::APPROVED->value;
         $request->save();
 
-        $car = $this->carRepo->find($request->car_id);
+        $car = $this->carRepository->find($request->car_id);
 
         if ($car) {
-            $this->carRepo->update($car, [
+            $this->carRepository->update($car, [
                 'status' => CarStatus::RENTED->value,
                 'current_renter_id' => $request->client_id,
             ]);
         }
 
-        return [
-            'data' => $request
-        ];
+        return $request->fresh(['car', 'client']) ?? $request;
     }
 
-    public function reject($id): array
+    public function reject($id): RentalRequest
     {
         $request = $this->repository->find($id);
 
         if (!$request) {
-            return [
-                'error' => 'Заявка не найдена'
-            ];
+            throw new ServiceException('Заявка не найдена', 404);
         }
 
         if ($request->status->value !== RentalStatus::PENDING->value) {
-            return [
-                'error' => 'Заявка уже обработана'
-            ];
+            throw new ServiceException('Заявка уже обработана', 400);
         }
 
         $request->status = RentalStatus::REJECTED->value;
 
         $request->save();
 
-        return [
-            'message' => 'Заявка отклонена'
-        ];
+        return $request->fresh(['car', 'client']) ?? $request;
     }
 
-    public function complete($id): array
+    public function complete($id): RentalRequest
     {
         $rentalRequest = $this->repository->findWithClientAndCar($id);
 
         if (!$rentalRequest) {
-            return [
-                'error' => 'Заявка не найдена'
-            ];
+            throw new ServiceException('Заявка не найдена', 404);
         }
 
         if ($rentalRequest->status->value !== RentalStatus::APPROVED->value) {
-            return [
-                'error' => 'Аренда должна быть одобрена для завершения'
-            ];
+            throw new ServiceException('Аренда должна быть одобрена для завершения', 400);
         }
 
         try {
@@ -177,11 +153,13 @@ class RentalRequestService
                     throw new RuntimeException('Не удалось сохранить историю аренды');
                 }
 
-                $this->carRepo->update($rentalRequest->car, [
+                $this->carRepository->update($rentalRequest->car, [
                     'status' => CarStatus::AVAILABLE->value,
                     'current_renter_id' => null,
                 ]);
             });
+
+            $this->agreementService->ensureAgreementExists($rentalRequest);
 
             event(new RentalRequestIsCompleted(
                 rentalRequest: $rentalRequest,
@@ -190,50 +168,30 @@ class RentalRequestService
                 client: $rentalRequest->client
             ));
 
-            return [
-                'message' => 'Аренда завершена'
-            ];
+            return $rentalRequest->fresh(['car', 'client']) ?? $rentalRequest;
         } catch (Throwable $e) {
-            return [
-                'error' => 'Не удалось завершить аренду'
-            ];
+            throw new ServiceException('Не удалось завершить аренду', 500, $e);
         }
     }
 
-    public function delete($id): array
+    public function delete($id): void
     {
         $request = $this->repository->find($id);
 
         if (!$request) {
-            return [
-                'error' => 'Заявка не найдена'
-            ];
+            throw new ServiceException('Заявка не найдена', 404);
         }
 
-        if ($request->status->value === (RentalStatus::APPROVED->value || RentalStatus::COMPLETED->value)) {
-            return [
-                'error' => 'Можно удалить заявку только в статусах "На рассмотрении" или "Отклонена"'
-            ];
+        if (in_array($request->status->value, [
+            RentalStatus::APPROVED->value,
+            RentalStatus::COMPLETED->value,
+        ], true)) {
+            throw new ServiceException(
+                'Можно удалить заявку только в статусах "На рассмотрении" или "Отклонена"',
+                400
+            );
         }
 
         $this->repository->delete($request);
-
-        return [
-            'message' => 'Заявка удалена'
-        ];
-    }
-
-    private function generateAgreement(RentalRequest $request): string
-    {
-        $pdf = Pdf::loadView('pdf.agreement', [
-            'request' => $request,
-            'car' => $request->car,
-            'client' => $request->client
-        ]);
-
-        $fileName = 'agreements/agreement_' . $request->id . '.pdf';
-        Storage::disk('public')->put($fileName, $pdf->output());
-
-        return $fileName;
     }
 }

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Client;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\ClientResource;
 use App\Http\Requests\Client\ClientCreateRequest;
 use App\Http\Requests\Client\ClientLicenseScanRequest;
 use App\Http\Requests\Client\ClientUpdateRequest;
@@ -22,7 +23,7 @@ class ClientController extends Controller
     public function index(): JsonResponse
     {
         return response()->json([
-            'data' => $this->service->all(),
+            'data' => ClientResource::collection($this->service->all()) ?? null
         ]);
     }
 
@@ -50,7 +51,7 @@ class ClientController extends Controller
 
         return response()->json([
             'message' => 'Клиент добавлен',
-            'data' => $client,
+            'data' => ClientResource::make($client) ?? null
         ], 201);
     }
 
@@ -65,16 +66,8 @@ class ClientController extends Controller
             ], 404);
         }
 
-        $data = $client->toArray();
-
-        if ($client->license_scan) {
-            $data['license_scan'] = Storage::disk('public')->url($client->license_scan);
-        } else {
-            $data['license_scan'] = null;
-        }
-
         return response()->json([
-            'data' => $data
+            'data' => ClientResource::make($client) ?? null
         ]);
     }
 

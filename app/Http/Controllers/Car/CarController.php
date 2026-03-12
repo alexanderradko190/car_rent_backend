@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Car;
 
 use App\DTO\Car\CreateCarDTO;
 use App\Http\Controllers\Controller;
+use App\Http\Resources\CarResource;
 use App\Http\Requests\Car\CarChangeClassRequest;
 use App\Http\Requests\Car\CarChangeLicensePlateRequest;
 use App\Http\Requests\Car\CarChangeRenterRequest;
@@ -28,7 +29,7 @@ class CarController extends Controller
 
         return response()->json([
             'message' => 'Список автомобилей',
-            'data' => $cars
+            'data' => CarResource::collection($cars) ?? null
         ]);
     }
 
@@ -43,7 +44,7 @@ class CarController extends Controller
         }
 
         return response()->json([
-            'data' => $car
+            'data' => CarResource::make($car) ?? null
         ]);
     }
 
@@ -66,7 +67,7 @@ class CarController extends Controller
 
         return response()->json([
             'message' => 'Автомобиль создан',
-            'data' => $car,
+            'data' => CarResource::make($car) ?? null,
         ], 201);
     }
 
@@ -82,15 +83,9 @@ class CarController extends Controller
 
         $updatedCar = $this->service->update($car, $data);
 
-        if (isset($updatedCar['error'])) {
-            return response()->json([
-                'message' => $updatedCar['error']
-            ], 400);
-        }
-
         return response()->json([
             'message' => 'Автомобиль успешно обновлен',
-            'data' => $updatedCar
+            'data' => CarResource::make($updatedCar) ?? null
         ], 201);
     }
 
@@ -117,7 +112,7 @@ class CarController extends Controller
 
         return response()->json([
             'message' => 'Доступные автомобили',
-            'data' => $availableCars
+            'data' => CarResource::collection($availableCars) ?? null
         ]);
     }
 
@@ -125,10 +120,11 @@ class CarController extends Controller
     {
         $data = $request->validated();
 
-        $this->service->changeStatus($car, $data['status']);
+        $updatedCar = $this->service->changeStatus($car, $data['status']);
 
         return response()->json([
-            'message' => 'Статус автомобиля обновлен'
+            'message' => 'Статус автомобиля обновлен',
+            'data' => CarResource::make($updatedCar) ?? null
         ], 201);
     }
 
@@ -136,10 +132,11 @@ class CarController extends Controller
     {
         $data = $request->validated();
 
-        $this->service->changeLicensePlate($car, $data['license_plate']);
+        $updatedCar = $this->service->changeLicensePlate($car, $data['license_plate']);
 
         return response()->json([
-            'message' => 'Номер автомобиля обновлен'
+            'message' => 'Номер автомобиля обновлен',
+            'data' => CarResource::make($updatedCar) ?? null
         ], 201);
     }
 
@@ -147,10 +144,11 @@ class CarController extends Controller
     {
         $data = $request->validated();
 
-        $this->service->changeRenter($car, $data['current_renter_id']);
+        $updatedCar = $this->service->changeRenter($car, $data['current_renter_id']);
 
         return response()->json([
-            'message' => 'Арендатор автомобиля обновлен'
+            'message' => 'Арендатор автомобиля обновлен',
+            'data' => CarResource::make($updatedCar) ?? null
         ], 201);
     }
 
@@ -158,10 +156,11 @@ class CarController extends Controller
     {
         $data = $request->validated();
 
-        $this->service->changeCarClassAndRate($car, $data['car_class']);
+        $updatedCar = $this->service->changeCarClassAndRate($car, $data['car_class']);
 
         return response()->json([
-            'message' => 'Класс автомобиля обновлен'
+            'message' => 'Класс автомобиля обновлен',
+            'data' => CarResource::make($updatedCar) ?? null
         ], 201);
     }
 }

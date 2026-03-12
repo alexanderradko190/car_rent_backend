@@ -50,8 +50,6 @@ Route::middleware('jwt.auth')->group(function () {
 
         Route::get('clients', [ClientController::class, 'index']);
         Route::delete('clients/{id}', [ClientController::class, 'destroy']);
-        Route::post('clients/export', [ClientController::class, 'export']);
-        Route::get('clients/export', [ClientController::class, 'export']);
 
         Route::get('rental-requests', [RentalRequestController::class, 'index']);
         Route::post('rental-requests', [RentalRequestController::class, 'store']);
@@ -59,6 +57,7 @@ Route::middleware('jwt.auth')->group(function () {
         Route::post('rental-requests/{id}/approve', [RentalRequestController::class, 'approve']);
         Route::post('rental-requests/{id}/reject', [RentalRequestController::class, 'reject']);
         Route::post('rental-requests/{id}/complete', [RentalRequestController::class, 'complete']);
+        Route::post('rental-requests/{id}/send-agreement', [RentalRequestController::class, 'sendAgreement']);
         Route::delete('rental-requests/{id}', [RentalRequestController::class, 'destroy']);
 
         Route::apiResource('rent_histories', RentHistoryController::class)

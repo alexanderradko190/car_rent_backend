@@ -6,7 +6,8 @@ use App\DTO\Car\CreateCarDTO;
 use App\Models\Car\Car;
 use App\Enums\Car\CarClass;
 use App\Enums\Car\CarStatus;
-use App\Models\User\User;
+use App\Exceptions\ServiceException;
+use App\Models\Client\Client;
 use App\Repositories\Car\CarRepositoryInterface;
 use Illuminate\Support\Collection;
 
@@ -25,15 +26,15 @@ class CarService
 
     public function getAll(): Collection
     {
-        return $this->repository->all();
+        return $this->normalizeCollection($this->repository->all());
     }
 
     public function available(): Collection
     {
-        return $this->repository->available();
+        return $this->normalizeCollection($this->repository->available());
     }
 
-    public function create(CreateCarDTO $dto)
+    public function create(CreateCarDTO $dto): ?Car
     {
         return $this->repository->create([
             'make' => $dto->make,
@@ -48,90 +49,63 @@ class CarService
         ]);
     }
 
-    public function update(Car $car, array $data): array
+    public function update(Car $car, array $data): Car
     {
+        $statusProvided = array_key_exists('status', $data);
         $status = $data['status'] ?? null;
         $currentRenterId = $data['current_renter_id'] ?? null;
 
-        if (!CarStatus::tryFrom($status)) {
-            return [
-                'error' => 'Указан недопустимый статус автомобиля'
-            ];
+        if ($statusProvided) {
+            if (!CarStatus::tryFrom($status)) {
+                throw new ServiceException('Указан недопустимый статус автомобиля', 400);
+            }
+
+            if ($car->status->value === $status) {
+                throw new ServiceException('Автомобиль уже арендован', 400);
+            }
         }
 
-        if ($car->status->value === $status) {
-            return [
-                'error' => 'Автомобиль уже арендован'
-            ];
-        }
-
-        if ($currentRenterId && !User::find($currentRenterId)) {
-            return [
-                'error' => 'Арендатор не найден в системе'
-            ];
+        if ($currentRenterId && !Client::find($currentRenterId)) {
+            throw new ServiceException('Арендатор не найден в системе', 404);
         }
 
         $car = $this->repository->update($car, $data);
 
         if (!$car) {
-            return [
-                'error' => 'Не удалось обновить автомобиль'
-            ];
+            throw new ServiceException('Не удалось обновить автомобиль', 500);
         }
 
-        return [
-            'message' => 'Данные автомобиля обновлены',
-            'data' => $car
-        ];
+        return $car;
     }
 
-    public function delete(Car $car): array
+    public function delete(Car $car): void
     {
         $this->repository->delete($car);
-
-        return [
-            'message' => 'Автомобиль удалён',
-            'code' => 200
-        ];
     }
 
-    public function changeStatus(Car $car, string $status): array
+    public function changeStatus(Car $car, string $status): Car
     {
         if (!CarStatus::tryFrom($status)) {
-            return [
-                'error' => 'Указан недопустимый статус автомобиля',
-                'code' => 400
-            ];
+            throw new ServiceException('Указан недопустимый статус автомобиля', 400);
         }
 
         if ($car->status->value === $status) {
-            return [
-                'error' => 'Автомобиль уже арендован',
-                'code' => 400
-            ];
+            throw new ServiceException('Автомобиль уже арендован', 400);
         }
 
         $car = $this->repository->update($car, ['status' => $status]);
 
-        return [
-            'message' => 'Статус автомобиля изменён',
-            'data' => $car,
-            'code' => 200
-        ];
+        return $car;
     }
 
-    public function changeRenter(Car $car, ?int $renterId): array
+    public function changeRenter(Car $car, ?int $renterId): ?Car
     {
         $car = $this->repository->update($car, ['current_renter_id' => $renterId]);
 
-        return [
-            'message' => 'Арендатор обновлён',
-            'data' => $car,
-            'code' => 200
-        ];
+        return $car;
     }
 
-    public function changeLicensePlate(Car $car, string $licensePlate)
+    public function changeLicensePlate(Car $car, string $licensePlate): ?Car
     {
         return $this->repository->update(
             $car,
@@ -141,20 +115,14 @@ class CarService
         );
     }
 
-    public function changeCarClassAndRate(Car $car, string $carClass): array
+    public function changeCarClassAndRate(Car $car, string $carClass): Car
     {
         if (!CarClass::tryFrom($carClass)) {
-            return [
-                'error' => 'Указан недопустимый класс автомобиля',
-                'code' => 400
-            ];
+            throw new ServiceException('Указан недопустимый класс автомобиля', 400);
         }
 
         if ($car->car_class->value === $carClass) {
-            return [
-                'error' => 'Класс автомобиля уже выбран',
-                'code' => 400
-            ];
+            throw new ServiceException('Класс автомобиля уже выбран', 400);
         }
 
         $rate = CarClass::from($carClass)->hourlyRate();
@@ -164,10 +132,20 @@ class CarService
             'hourly_rate' => $rate
         ]);
 
-        return [
-            'message' => 'Класс автомобиля и ставка обновлены',
-            'data' => $car,
-            'code' => 200
-        ];
+        return $car;
+    }
+
+    private function normalizeCollection(Collection $cars): Collection
+    {
+        if ($cars->isEmpty()) {
+            return $cars;
+        }
+
+        $first = $cars->first();
+        if (is_array($first)) {
+            return Car::hydrate($cars->all());
+        }
+
+        return $cars;
     }
 }

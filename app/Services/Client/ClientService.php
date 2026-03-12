@@ -18,6 +18,7 @@ class ClientService
     public function create(CreateClientDTO $dto): Client
     {
         return $this->repository->create([
+            'user_id' => $dto->user_id,
             'full_name' => $dto->full_name,
             'age' => $dto->age,
             'phone' => $dto->phone,

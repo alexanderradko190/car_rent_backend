@@ -4,14 +4,18 @@ namespace App\Http\Controllers\RentalRequest;
 
 use App\DTO\RentalRequest\CreateRentalRequestDTO;
 use App\Http\Controllers\Controller;
+use App\Http\Resources\RentalRequestResource;
 use App\Http\Requests\RentalRequest\RentalRequestRequest;
+use App\Http\Requests\RentalRequest\SendAgreementRequest;
+use App\Services\RentalRequest\AgreementDeliveryService;
 use App\Services\RentalRequest\RentalRequestService;
 use Illuminate\Http\JsonResponse;
 
 class RentalRequestController extends Controller
 {
     public function __construct(
-        private RentalRequestService $service
+        private RentalRequestService $service,
+        private AgreementDeliveryService $agreementDeliveryService
     ) {
         //
     }
@@ -19,7 +23,7 @@ class RentalRequestController extends Controller
     public function index(): JsonResponse
     {
         return response()->json([
-            'data' => $this->service->all()
+            'data' => RentalRequestResource::collection($this->service->all()) ?? null
         ]);
     }
 
@@ -34,7 +38,7 @@ class RentalRequestController extends Controller
         }
 
         return response()->json([
-            'data' => $request
+            'data' => RentalRequestResource::make($request) ?? null
         ]);
     }
 
@@ -61,25 +65,15 @@ class RentalRequestController extends Controller
 
         $result = $this->service->create($dto);
 
-        if (isset($result['error'])) {
-            return response()->json($result, 400);
-        }
-
         return response()->json([
             'message' => 'Заявка на аренду создана',
-            'data' => $result['data']
+            'data' => RentalRequestResource::make($result) ?? null
         ], 201);
     }
 
     public function approve($id): JsonResponse
     {
-        $rentRequest = $this->service->approve($id);
-
-        if (isset($rentRequest['error'])) {
-            return response()->json([
-                'message' => $rentRequest['error']
-            ], 404);
-        }
+        $this->service->approve($id);
 
         return response()->json([
             'message' => 'Заявка на аренду подтверждена'
@@ -88,13 +82,7 @@ class RentalRequestController extends Controller
 
     public function reject($id): JsonResponse
     {
-        $rentRequest = $this->service->reject($id);
-
-        if (isset($rentRequest['error'])) {
-            return response()->json([
-                'message' => $rentRequest['error']
-            ], 404);
-        }
+        $this->service->reject($id);
 
         return response()->json([
             'message' => 'Заявка на аренду отклонена'
@@ -103,13 +91,7 @@ class RentalRequestController extends Controller
 
     public function complete($id): JsonResponse
     {
-        $rentRequest = $this->service->complete($id);
-
-        if (isset($rentRequest['error'])) {
-            return response()->json([
-                'message' => $rentRequest['error']
-            ], 404);
-        }
+        $this->service->complete($id);
 
         return response()->json([
             'message' => 'Аренда завершена'
@@ -118,16 +100,31 @@ class RentalRequestController extends Controller
 
     public function destroy($id): JsonResponse
     {
-        $rentRequest = $this->service->delete($id);
-
-        if (isset($rentRequest['error'])) {
-            return response()->json([
-                'message' => $rentRequest['error']
-            ], 404);
-        }
+        $this->service->delete($id);
 
         return response()->json([
             'message' => 'Заявка на аренду удалена'
         ], 201);
+    }
+
+    public function sendAgreement(SendAgreementRequest $request, $id): JsonResponse
+    {
+        $data = $request->validated();
+
+        $force = array_key_exists('force', $data) ? (bool) $data['force'] : true;
+
+        $attempt = $this->agreementDeliveryService->sendForRentalRequestId(
+            $id,
+            $data['rent_history_id'] ?? null,
+            $force
+        );
+
+        return response()->json([
+            'message' => 'Договор отправлен',
+            'data' => [
+                'delivery_id' => $attempt->id,
+                'status' => $attempt->status,
+            ],
+        ], 202);
     }
 }

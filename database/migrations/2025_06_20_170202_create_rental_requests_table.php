@@ -19,8 +19,6 @@ return new class extends Migration {
             $table->string('status', 20)->default(RentalStatus::PENDING->value);
             $table->string('agreement_path')->nullable();
             $table->timestamps();
-
-            $table->index(['car_id', 'start_time', 'end_time']);
         });
     }
 

@@ -17,7 +17,7 @@ interface ReportRepositoryInterface
         $error = null,
     ): void;
 
-    public function getReportById(int $reportId): ReportExport;
+    public function getReportById(int $reportId): ?ReportExport;
 
     public function getFinishedReports(): Collection;
 }

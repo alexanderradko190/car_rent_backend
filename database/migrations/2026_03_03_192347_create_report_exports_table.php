@@ -16,7 +16,6 @@ return new class extends Migration {
             $table->string('status')->default('pending');
             $table->string('file_path')->nullable();
             $table->text('error')->nullable();
-
             $table->timestamps();
         });
     }

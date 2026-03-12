@@ -4,6 +4,7 @@ namespace App\Repositories\Report;
 
 use App\Enums\Report\ReportStatus;
 use App\Models\Report\ReportExport;
+use Exception;
 use Illuminate\Support\Collection;
 
 class EloquentReportRepository implements ReportRepositoryInterface
@@ -26,6 +27,10 @@ class EloquentReportRepository implements ReportRepositoryInterface
     ): void {
         $report = $this->getReportById($reportId);
 
+        if (!$report) {
+            throw new Exception('Отчет не найден', 404);
+        }
+
         $report->update([
             'status' => $reportStatus->value,
             'error' => $error,
@@ -33,9 +38,9 @@ class EloquentReportRepository implements ReportRepositoryInterface
         ]);
     }
 
-    public function getReportById(int $reportId): ReportExport
+    public function getReportById(int $reportId): ?ReportExport
     {
-        return ReportExport::query()->findOrFail($reportId);
+        return ReportExport::query()->find($reportId);
     }
 
     public function getFinishedReports(): Collection

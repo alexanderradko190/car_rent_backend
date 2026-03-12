@@ -27,7 +27,7 @@ class ReportExportController extends Controller
         $job = GenerateReportJob::dispatch($report->id, $data)->onQueue('go-report');
 
         if (!$job) {
-            response()->json([
+            return response()->json([
                 'message' => 'Не удалось сгенерировать отчет'
             ], 500);
         }
@@ -65,6 +65,12 @@ class ReportExportController extends Controller
     public function download(int $id, ReportStorage $reportStorage)
     {
         $report = $this->reportRepository->getReportById($id);
+
+        if (!$report) {
+            return response()->json([
+                'message' => 'Отчет не найден',
+            ], 404);
+        }
 
         if ($report->status !== ReportStatus::FINISHED->value) {
             return response()->json([

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\RentHistory;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\RentHistoryResource;
 use App\Http\Requests\RentHistory\RentHistoryRequest;
 use App\Services\RentHistory\RentHistoryService;
 use Illuminate\Http\JsonResponse;
@@ -33,7 +34,7 @@ class RentHistoryController extends Controller
         $data = $this->service->filterAndSort($filters, $sortBy, $sortOrder);
 
         return response()->json([
-            'data' => $data
+            'data' => RentHistoryResource::collection($data) ?? null
         ]);
     }
 
@@ -48,7 +49,7 @@ class RentHistoryController extends Controller
         }
 
         return response()->json([
-            'data' => $history
+            'data' => RentHistoryResource::make($history) ?? null
         ]);
     }
 }
