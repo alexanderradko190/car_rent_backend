@@ -52,7 +52,6 @@ Route::middleware('jwt.auth')->group(function () {
         Route::delete('clients/{id}', [ClientController::class, 'destroy']);
 
         Route::get('rental-requests', [RentalRequestController::class, 'index']);
-        Route::post('rental-requests', [RentalRequestController::class, 'store']);
         Route::get('rental-requests/{id}', [RentalRequestController::class, 'show']);
         Route::post('rental-requests/{id}/approve', [RentalRequestController::class, 'approve']);
         Route::post('rental-requests/{id}/reject', [RentalRequestController::class, 'reject']);
@@ -66,6 +65,8 @@ Route::middleware('jwt.auth')->group(function () {
 
 //    Admin, Manager, User
     Route::middleware(CheckRole::class . ':admin|manager|user')->group(function () {
+
+        Route::post('rental-requests', [RentalRequestController::class, 'store']);
 
         Route::post('clients', [ClientController::class, 'store']);
         Route::put('clients/{id}', [ClientController::class, 'update']);

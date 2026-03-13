@@ -50,6 +50,8 @@ class EloquentCarRepository implements CarRepositoryInterface
 
     public function available(): Collection
     {
-        return Car::where('status', 'available')->get();
+        return Car::where('status', 'available')
+            ->whereNull('current_renter_id')
+            ->get();
     }
 }

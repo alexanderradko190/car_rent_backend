@@ -2,23 +2,25 @@
 
 namespace App\Services\RentalRequest;
 
-use App\Enums\Car\RentalStatus;
 use App\Enums\Report\ReportStatus;
 use App\Mail\RentalCompletedMail;
 use App\Models\Car\Car;
 use App\Models\Client\Client;
 use App\Models\RentHistory\RentHistory;
+use App\Services\RentHistory\RentHistoryService;
 use App\Models\RentalRequest\AgreementDelivery;
 use App\Models\RentalRequest\RentalRequest;
+use App\Helpers\TransactionHelper;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\DB;
 use RuntimeException;
 use Throwable;
 
 class AgreementDeliveryService
 {
     public function __construct(
-        private readonly AgreementService $agreementService
+        private readonly AgreementService $agreementService,
+        private readonly RentHistoryService $rentHistoryService,
+        private readonly TransactionHelper $transaction
     ) {
         //
     }
@@ -44,18 +46,10 @@ class AgreementDeliveryService
             throw new RuntimeException('Заявка на аренду не найдена', 404);
         }
 
-        $statusValue = $rentalRequest->status?->value ?? $rentalRequest->status;
-        if ($statusValue !== RentalStatus::COMPLETED->value) {
-            throw new RuntimeException('Отправить договор можно только после завершения аренды', 400);
-        }
-
         $rentHistory = $rentHistoryId
-            ? RentHistory::query()->with(['car', 'client'])->find($rentHistoryId)
-            : $this->findRentHistoryForRequest($rentalRequest);
-
-        if (!$rentHistory) {
-            throw new RuntimeException('История аренды для заявки не найдена', 404);
-        }
+            ? $this->rentHistoryService->findWithCarAndClient($rentHistoryId)
+            : null;
+        $rentHistory ??= $this->findOrCreateRentHistoryForRequest($rentalRequest);
 
         $car = $rentalRequest->car ?? $rentHistory->car;
         $client = $rentalRequest->client ?? $rentHistory->client;
@@ -120,7 +114,7 @@ class AgreementDeliveryService
         Car $car,
         Client $client,
     ): AgreementDelivery {
-        return DB::transaction(function () use ($rentalRequest, $rentHistory, $car, $client) {
+        return $this->transaction->run(function () use ($rentalRequest, $rentHistory, $car, $client) {
             RentalRequest::query()
                 ->whereKey($rentalRequest->id)
                 ->lockForUpdate()
@@ -148,19 +142,15 @@ class AgreementDeliveryService
         });
     }
 
-    private function findRentHistoryForRequest(RentalRequest $rentalRequest): ?RentHistory
+    private function findOrCreateRentHistoryForRequest(RentalRequest $rentalRequest): RentHistory
     {
-        if (!$rentalRequest->end_time) {
-            return null;
-        }
-
-        return RentHistory::query()
-            ->with(['car', 'client'])
-            ->where('car_id', $rentalRequest->car_id)
-            ->where('client_id', $rentalRequest->client_id)
-            ->where('start_time', $rentalRequest->start_time)
-            ->where('end_time', $rentalRequest->end_time)
-            ->orderByDesc('id')
-            ->first();
+        return $this->rentHistoryService->create([
+            'rental_request_id' => $rentalRequest->id,
+            'car_id' => $rentalRequest->car_id,
+            'client_id' => $rentalRequest->client_id,
+            'start_time' => $rentalRequest->start_time,
+            'end_time' => $rentalRequest->end_time,
+            'total_cost' => $rentalRequest->total_cost ?? 0,
+        ]);
     }
 }

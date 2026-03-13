@@ -10,6 +10,7 @@ use App\Http\Requests\RentalRequest\SendAgreementRequest;
 use App\Services\RentalRequest\AgreementDeliveryService;
 use App\Services\RentalRequest\RentalRequestService;
 use Illuminate\Http\JsonResponse;
+use RuntimeException;
 
 class RentalRequestController extends Controller
 {
@@ -111,17 +112,23 @@ class RentalRequestController extends Controller
     {
         $data = $request->validated();
 
-        $attempt = $this->agreementDeliveryService->sendForRentalRequestId(
-            $id,
-            $data['rent_history_id']
-        );
+        try {
+            $attempt = $this->agreementDeliveryService->sendForRentalRequestId(
+                $id,
+                $data['rent_history_id']
+            );
 
-        return response()->json([
-            'message' => 'Договор отправлен',
-            'data' => [
-                'delivery_id' => $attempt->id,
-                'status' => $attempt->status,
-            ],
-        ], 202);
+            return response()->json([
+                'message' => 'Договор отправлен',
+                'data' => [
+                    'delivery_id' => $attempt->id,
+                    'status' => $attempt->status,
+                ],
+            ], 202);
+        } catch (RuntimeException $e) {
+            return response()->json([
+                'message' => $e->getMessage(),
+            ], $e->getCode());
+        }
     }
 }

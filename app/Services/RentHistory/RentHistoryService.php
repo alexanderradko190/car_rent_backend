@@ -28,6 +28,11 @@ class RentHistoryService
         return $this->repository->find($id);
     }
 
+    public function findWithCarAndClient(int $id): ?RentHistory
+    {
+        return $this->repository->findWithCarAndClient($id);
+    }
+
     public function filterAndSort(array $filters, ?string $sortBy, string $sortOrder): Collection
     {
         return $this->repository->filterAndSort($filters, $sortBy, $sortOrder);

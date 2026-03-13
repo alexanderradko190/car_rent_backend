@@ -11,11 +11,11 @@ use App\Models\RentalRequest\RentalRequest;
 use App\Repositories\Car\CarRepositoryInterface;
 use App\Repositories\Client\ClientRepository;
 use App\Repositories\RentalRequest\RentalRequestRepository;
+use App\Helpers\TransactionHelper;
 use App\Services\RentalRequest\AgreementService;
 use App\Services\RentalCostCalculator;
 use App\Services\RentHistory\RentHistoryService;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Support\Facades\DB;
 use RuntimeException;
 use Throwable;
 
@@ -27,7 +27,8 @@ class RentalRequestService
         private ClientRepository        $clientRepository,
         private AgreementService        $agreementService,
         private RentalCostCalculator    $costCalculator,
-        private RentHistoryService    $rentHistoryService
+        private RentHistoryService    $rentHistoryService,
+        private TransactionHelper    $transaction
     ) {
         //
     }
@@ -66,11 +67,19 @@ class RentalRequestService
             'status' => RentalStatus::PENDING->value
         ];
 
-        $request = $this->repository->create($data);
-        $request = $this->repository->withClient($request->id);
-        $request = $this->repository->withCar($request->id);
+        $request = $this->transaction->run(function () use ($data, $car, $dto) {
+            $request = $this->repository->create($data);
 
-        $this->agreementService->ensureAgreementExists($request);
+            $this->carRepository->update($car, [
+                'status' => CarStatus::RENTED->value,
+                'current_renter_id' => $dto->client_id,
+            ]);
+
+            $requestWithRelations = $this->repository->findWithClientAndCar($request->id);
+            $this->agreementService->ensureAgreementExists($requestWithRelations);
+
+            return $requestWithRelations;
+        });
 
         return $request;
     }
@@ -87,17 +96,19 @@ class RentalRequestService
             throw new ServiceException('Заявка уже обработана', 400);
         }
 
-        $request->status = RentalStatus::APPROVED->value;
-        $request->save();
+        $this->transaction->run(function () use ($request) {
+            $request->status = RentalStatus::APPROVED->value;
+            $request->save();
 
-        $car = $this->carRepository->find($request->car_id);
+            $car = $this->carRepository->find($request->car_id);
 
-        if ($car) {
-            $this->carRepository->update($car, [
-                'status' => CarStatus::RENTED->value,
-                'current_renter_id' => $request->client_id,
-            ]);
-        }
+            if ($car) {
+                $this->carRepository->update($car, [
+                    'status' => CarStatus::RENTED->value,
+                    'current_renter_id' => $request->client_id,
+                ]);
+            }
+        });
 
         return $request->fresh(['car', 'client']) ?? $request;
     }
@@ -114,9 +125,19 @@ class RentalRequestService
             throw new ServiceException('Заявка уже обработана', 400);
         }
 
-        $request->status = RentalStatus::REJECTED->value;
+        $this->transaction->run(function () use ($request) {
+            $request->status = RentalStatus::REJECTED->value;
+            $request->save();
 
-        $request->save();
+            $car = $this->carRepository->find($request->car_id);
+
+            if ($car && $car->current_renter_id === $request->client_id) {
+                $this->carRepository->update($car, [
+                    'status' => CarStatus::AVAILABLE->value,
+                    'current_renter_id' => null,
+                ]);
+            }
+        });
 
         return $request->fresh(['car', 'client']) ?? $request;
     }
@@ -136,12 +157,13 @@ class RentalRequestService
         try {
             $rentHistory = null;
 
-            DB::transaction(function () use (&$rentHistory, $rentalRequest) {
+            $this->transaction->run(function () use (&$rentHistory, $rentalRequest) {
                 $rentalRequest->status = RentalStatus::COMPLETED->value;
                 $rentalRequest->end_time = now();
                 $rentalRequest->save();
 
                 $rentHistory = $this->rentHistoryService->create([
+                    'rental_request_id' => $rentalRequest->id,
                     'car_id'     => $rentalRequest->car_id,
                     'client_id'  => $rentalRequest->client_id,
                     'start_time' => $rentalRequest->start_time,

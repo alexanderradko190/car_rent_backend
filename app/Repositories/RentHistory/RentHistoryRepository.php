@@ -22,6 +22,11 @@ class RentHistoryRepository
         return RentHistory::find($id);
     }
 
+    public function findWithCarAndClient(int $id): ?RentHistory
+    {
+        return RentHistory::query()->with(['car', 'client'])->find($id);
+    }
+
     public function filterAndSort(array $filters, ?string $sortBy, string $sortOrder): Collection
     {
         $query = RentHistory::with(['car', 'client']);
@@ -71,6 +76,8 @@ class RentHistoryRepository
             $query->join('clients', 'rent_histories.client_id', '=', 'clients.id')
                 ->orderBy('clients.full_name', $sortOrder)
                 ->select('rent_histories.*');
+        } else {
+            $query->orderBy('start_time', $sortOrder === 'desc' ? 'desc' : 'asc');
         }
 
         return $query->get();

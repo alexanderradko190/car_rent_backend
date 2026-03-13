@@ -13,11 +13,17 @@ class RentHistory extends Model
     use HasFactory;
 
     protected $fillable = [
+        'rental_request_id',
         'car_id',
         'client_id',
         'start_time',
         'end_time',
         'total_cost'
+    ];
+
+    protected $casts = [
+        'start_time' => 'datetime',
+        'end_time' => 'datetime',
     ];
 
     public function car(): BelongsTo

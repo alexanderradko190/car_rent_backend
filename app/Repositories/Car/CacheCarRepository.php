@@ -64,6 +64,7 @@ class CacheCarRepository implements CarRepositoryInterface
     {
         return $this->all()
             ->where('status', 'available')
+            ->whereNull('current_renter_id')
             ->values();
     }
 }

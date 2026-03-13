@@ -31,7 +31,9 @@ class ClientController extends Controller
     {
         $data = $request->validated();
 
-        $data['user_id'] = auth()->id();
+        $data['user_id'] = auth('api')->user()->id;
+        $data['full_name'] = auth('api')->user()->name;
+        $data['email'] = auth('api')->user()->email;
 
         $dto = new CreateClientDTO(
             $data['user_id'],
@@ -123,12 +125,6 @@ class ClientController extends Controller
             return response()->json([
                 'message' => 'Клиент не найден'
             ], 404);
-        }
-
-        if ($client->car) {
-            return response()->json([
-                'message' => 'Нельзя удалить клиента, который привязан к автомобилю'
-            ], 400);
         }
 
         $this->service->delete($client);
