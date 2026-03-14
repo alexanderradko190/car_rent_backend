@@ -5,7 +5,6 @@ namespace App\Models\RentalRequest;
 use App\Enums\Car\RentalStatus;
 use App\Models\Car\Car;
 use App\Models\Client\Client;
-use Database\Factories\RentalRequestFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -31,11 +30,6 @@ class RentalRequest extends Model
         'end_time' => 'datetime',
         'insurance_option' => 'boolean'
     ];
-
-    public static function factory(...$parameters)
-    {
-        return RentalRequestFactory::new();
-    }
 
     public function client(): BelongsTo
     {

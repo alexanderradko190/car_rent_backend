@@ -4,12 +4,15 @@ namespace App\Models\User;
 
 use App\Enums\User\UserRole;
 use App\Models\Client\Client;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Tymon\JWTAuth\Contracts\JWTSubject;
 
 class User extends Authenticatable implements JWTSubject
 {
+    use HasFactory;
+
     protected $fillable = [
         'name',
         'email',
