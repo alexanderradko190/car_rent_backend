@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Requests\Auth\RegisterRequest;
+use App\Http\Resources\UserResource;
 use App\Models\User\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Hash;
@@ -29,7 +30,7 @@ class AuthController extends Controller
         return response()->json([
             'token' => $token,
             'token_type' => 'bearer',
-            'user' => $user,
+            'user' => UserResource::make($user),
         ], 201);
     }
 
@@ -50,14 +51,14 @@ class AuthController extends Controller
         return response()->json([
             'token' => $token,
             'token_type' => 'bearer',
-            'user' => $user,
+            'user' => UserResource::make($user),
         ]);
     }
 
     public function getUser(): JsonResponse
     {
         return response()->json([
-            'user' => auth('api')->user(),
+            'user' => UserResource::make(auth('api')->user()),
         ]);
     }
 

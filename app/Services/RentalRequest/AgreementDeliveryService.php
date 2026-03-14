@@ -105,7 +105,7 @@ class AgreementDeliveryService
             throw new RuntimeException('Не удалось отправить договор аренды', 500, $e);
         }
 
-        return $attempt->fresh();
+        return $attempt;
     }
 
     private function createAttempt(

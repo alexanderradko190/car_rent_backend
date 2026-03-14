@@ -110,7 +110,7 @@ class RentalRequestService
             }
         });
 
-        return $request->fresh(['car', 'client']) ?? $request;
+        return $request;
     }
 
     public function reject($id): RentalRequest
@@ -139,7 +139,7 @@ class RentalRequestService
             }
         });
 
-        return $request->fresh(['car', 'client']) ?? $request;
+        return $request;
     }
 
     public function complete($id): RentalRequest
@@ -186,11 +186,11 @@ class RentalRequestService
             event(new RentalRequestIsCompleted(
                 rentalRequest: $rentalRequest,
                 rentHistory: $rentHistory,
-                car: $rentalRequest->car->fresh(),
+                car: $rentalRequest->car,
                 client: $rentalRequest->client
             ));
 
-            return $rentalRequest->fresh(['car', 'client']) ?? $rentalRequest;
+            return $rentalRequest;
         } catch (Throwable $e) {
             throw new ServiceException('Не удалось завершить аренду', 500, $e);
         }
