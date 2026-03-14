@@ -2,9 +2,9 @@
 
 namespace Tests\Unit\RentalRequest;
 
-use App\Models\Car;
+use App\Models\Car\Car;
 use App\Services\RentalCostCalculator;
-use PHPUnit\Framework\TestCase;
+use Tests\TestCase;
 
 class RentalCostCalculatorTest extends TestCase
 {

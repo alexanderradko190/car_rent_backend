@@ -2,9 +2,9 @@
 
 namespace Database\Factories;
 
-use App\Enums\CarClass;
-use App\Enums\CarStatus;
-use App\Models\Car;
+use App\Enums\Car\CarClass;
+use App\Enums\Car\CarStatus;
+use App\Models\Car\Car;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 class CarFactory extends Factory
