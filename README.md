@@ -218,24 +218,6 @@ name, email берутся из текущего пользователя. licen
 | POST | /rental-requests/{id}/send-agreement | Отправить договор |
 | DELETE | /rental-requests/{id} | Удалить |
 
-**GET /rental-requests** — тело не требуется. Ответ 200: `{"data":[...]}`
-
-**Автомобили:** GET/POST /cars, GET/PUT/DELETE /cars/{id}. PATCH для смены статуса, госномера, класса. GET /cars-available — свободные машины. PATCH /cars/{id}/renter — сменить арендатора.
-
-**Клиенты:** GET/POST /clients, GET/PUT/DELETE /clients/{id}. POST /clients/{id}/license_scan — загрузка скана водительского удостоверения.
-
-**Заявки:** GET /rental-requests, POST /rental-requests, GET/POST/DELETE по id. approve, reject, complete, send-agreement — отдельные POST на /rental-requests/{id}/...
-
-**История аренды:** GET /rent_histories, GET/DELETE /rent_histories/{id}.
-
-**Отчёты (доступно только роли admin):** POST /reports, GET /reports, GET /reports/{id}/status, GET /reports/{id}/download.
-
-Доступы для ролей:
-** admin имеет доступ ко всем методам,
-** manager — ко всем, кроме отчётов,
-** user — свои заявки, клиентский профиль, доступные для аренды автомобили
-
-
 ---
 
 ### История аренды
