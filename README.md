@@ -2,9 +2,7 @@
 
 Бэкенд для сервиса аренды автомобилей.
 
-Инструкция по запуску — в README.md проекта develop.
-
----
+Инструкция по запуску в Readme.md проекта develop
 
 ## API
 
@@ -222,33 +220,25 @@ name, email берутся из текущего пользователя. licen
 
 **GET /rental-requests** — тело не требуется. Ответ 200: `{"data":[...]}`
 
-**POST /rental-requests** — тело:
-```json
-{
-  "car_id": 1,
-  "start_time": "2024-12-01 10:00:00",
-  "end_time": "2024-12-02 10:00:00",
-  "insurance_option": true,
-  "agreement_accepted": true
-}
-```
-start_time — в будущем, end_time — после start_time. Ответ 201: `{"message":"Заявка на аренду создана","data":{...}}`
+**Автомобили:** GET/POST /cars, GET/PUT/DELETE /cars/{id}. PATCH для смены статуса, госномера, класса. GET /cars-available — свободные машины. PATCH /cars/{id}/renter — сменить арендатора.
 
-**GET /rental-requests/{id}** — тело не требуется. Ответ 200: `{"data":{...}}`
+**Клиенты:** GET/POST /clients, GET/PUT/DELETE /clients/{id}. POST /clients/{id}/license_scan — загрузка скана водительского удостоверения.
 
-**POST /rental-requests/{id}/approve** — тело не требуется. Ответ 200: `{"message":"Заявка на аренду подтверждена"}`
+**Заявки:** GET /rental-requests, POST /rental-requests, GET/POST/DELETE по id. approve, reject, complete, send-agreement — отдельные POST на /rental-requests/{id}/...
 
-**POST /rental-requests/{id}/reject** — тело не требуется. Ответ 200: `{"message":"Заявка отклонена"}`
+**История аренды:** GET /rent_histories, GET/DELETE /rent_histories/{id}.
 
-**POST /rental-requests/{id}/complete** — тело не требуется. Ответ 200: `{"message":"Аренда завершена"}`
+**Отчёты (доступно только роли admin):** POST /reports, GET /reports, GET /reports/{id}/status, GET /reports/{id}/download.
 
-**POST /rental-requests/{id}/send-agreement** — тело не требуется. Ответ 200: `{"message":"Договор отправлен"}`
+Доступы для ролей:
+** admin имеет доступ ко всем методам,
+** manager — ко всем, кроме отчётов,
+** user — свои заявки, клиентский профиль, доступные для аренды автомобили
 
-**DELETE /rental-requests/{id}** — тело не требуется. Ответ 200: `{"message":"Заявка удалена"}`
 
 ---
 
-### История аренд
+### История аренды
 
 **Роли:** admin, manager.
 
